@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-import 'Utility.dart';
-import 'app_state/app_notifier.dart';
+import 'package:shapey/Utility.dart';
+import 'package:shapey/app_state/app_notifier.dart';
 
 const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 2,

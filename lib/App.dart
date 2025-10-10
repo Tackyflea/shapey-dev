@@ -1,12 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_layout_grid/flutter_layout_grid.dart';
 
-import 'CanvasWidget.dart';
-import 'ToolsWidget.dart';
-import 'TopWIdget.dart';
-import 'Utility.dart';
+import 'sections/StageWidget.dart';
+import 'sections/ToolsWidget.dart';
+import 'sections/TopWidget.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -48,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             TopWidget().inGridArea('header'),
             ToolsWidget().inGridArea('tools'),
-            CanvasWidget().inGridArea('content'),
+            StageWidget().inGridArea('content'),
           ],
         ),
       ),
