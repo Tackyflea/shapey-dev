@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shapey/utility/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
+// SHAPE CANVAS
 class ShapeCanvas extends StatefulWidget {
   const ShapeCanvas({super.key, this.width = 100, this.height = 100});
 
@@ -15,6 +17,7 @@ class ShapeCanvas extends StatefulWidget {
 class ShapeCanvasState extends State<ShapeCanvas> {
   final ValueNotifier<bool> _repaintNotifier = ValueNotifier(false);
 
+  final drawy = Drawy();
   late String stretchStarSvg;
   late String squareStarSvg;
   Vector2 MousePosition = Vector2(0, 0);
@@ -32,6 +35,11 @@ class ShapeCanvasState extends State<ShapeCanvas> {
         pictureInfo = value;
       });
     });
+
+    // test draws
+    drawy.addLine([Vector2(20, 40), Vector2(449, 111), Vector2(249, 111)]);
+    drawy.addLine([Vector2(120, 40), Vector2(33, 111), Vector2(22, 900)]);
+
     super.initState();
   }
 
@@ -44,7 +52,6 @@ class ShapeCanvasState extends State<ShapeCanvas> {
   void updateStage(dynamic details) {
     MousePosition.x = details.localPosition.dx;
     MousePosition.y = details.localPosition.dy;
-    _repaintNotifier.value = !_repaintNotifier.value;
   }
 
   @override
@@ -52,12 +59,18 @@ class ShapeCanvasState extends State<ShapeCanvas> {
     return GestureDetector(
       onTapDown: (details) {
         updateStage(details);
+        drawy.penMode(MousePosition);
+        _repaintNotifier.value = !_repaintNotifier.value;
       },
-      onPanUpdate: (details) => {updateStage(details)},
+      // onPanUpdate: (details) {
+      //   updateStage(details);
+      //   _repaintNotifier.value = !_repaintNotifier.value;
+      // },
       child: CustomPaint(
         size: Size(widget.width, widget.height),
         painter: _ShapeCanvasPainter(
           _repaintNotifier,
+          drawy,
           pictureInfo,
           MousePosition,
         ),
@@ -66,35 +79,32 @@ class ShapeCanvasState extends State<ShapeCanvas> {
   }
 }
 
-class Drawy {
-  final Canvas ctx;
-  var paint = Paint()
-    ..color = Colors.teal
-    ..strokeWidth = 15;
-  Drawy(this.ctx);
-
-  void line(Offset p1, Offset p2) => ctx.drawLine(p1, p2, paint);
-}
-
 class _ShapeCanvasPainter extends CustomPainter {
   final PictureInfo? pictureInfo;
+  final Drawy drawy;
   Vector2 mousePosition = Vector2(0, 0);
-  _ShapeCanvasPainter(Listenable repaint, this.pictureInfo, this.mousePosition)
-    : super(repaint: repaint);
+  _ShapeCanvasPainter(
+    Listenable repaint,
+    this.drawy,
+    this.pictureInfo,
+    this.mousePosition,
+  ) : super(repaint: repaint);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final drawy = Drawy(canvas);
     if (pictureInfo != null) {
-      drawy.ctx.drawRect(
+      drawy.setCanvas(canvas);
+      canvas.drawRect(
         Rect.fromLTWH(0, 0, size.width, size.height),
         Paint()..color = Colors.blue,
       );
-      drawy.ctx.save();
+      canvas.save();
       // el.ctx.scale(scale, scale);
-      drawy.ctx.drawPicture(pictureInfo!.picture);
-      drawy.line(Offset(133, 55), Offset(mousePosition.x, mousePosition.y));
-      drawy.ctx.restore();
+      canvas.drawPicture(pictureInfo!.picture);
+      // drawy.line(Offset(133, 55), Offset(mousePosition.x, mousePosition.y));
+
+      drawy.update();
+      canvas.restore();
     }
   }
 
