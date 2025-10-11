@@ -15,6 +15,8 @@ class ToolsWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
     return GridView.builder(
       gridDelegate: horisontalGridSettings,
       itemCount: ActiveTool.values.length,
@@ -24,10 +26,10 @@ class ToolsWidget extends ConsumerWidget {
           // update app model's active tool
           onTap: () => ref.read(appNotifier.notifier).updateTool(tool),
           child: Ink(
-            color: Colors.red,
+            color: colorScheme.surfaceContainer,
             child: Text(
               tool.shortName,
-              style: const TextStyle(fontSize: 12, color: Colors.white),
+              style: textTheme.bodyMedium,
               overflow: TextOverflow.ellipsis,
             ),
           ),

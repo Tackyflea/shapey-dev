@@ -7,11 +7,11 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 
 class Drawy {
   late Canvas canvasToDrawOn;
-  List<DrawyPath> DrawPaths = [];
-  DrawyPath PenPath = DrawyPath(pathPoints: []);
+  List<DrawyPath> drawPaths = [];
+  DrawyPath penPath = DrawyPath(pathPoints: []);
   var paint = Paint()
-    ..color = Colors.teal
-    ..strokeWidth = 15
+    ..color = Color.fromARGB(255, 28, 134, 236)
+    ..strokeWidth = 2
     ..style = PaintingStyle.stroke;
   void setCanvas(Canvas newCtx) {
     canvasToDrawOn = newCtx;
@@ -21,24 +21,24 @@ class Drawy {
   void addLine(List<Vector2> points) {
     var newPath = DrawyPath(pathPoints: points);
     newPath.converPointsToPath();
-    DrawPaths.add(newPath);
+    drawPaths.add(newPath);
   }
 
   void penMode(Vector2 mousePosition) {
-    PenPath.addPoint(mousePosition.clone());
+    penPath.addPoint(mousePosition.clone());
     // reconverPointsToPath path based off new data
-    PenPath.converPointsToPath();
+    penPath.converPointsToPath();
   }
 
   void update() {
     // generic paths
-    var paths = DrawPaths;
+    var paths = drawPaths;
     for (var path in paths) {
       path.draw(canvasToDrawOn, paint);
     }
 
     // pen paths
-    PenPath.draw(canvasToDrawOn, paint);
+    penPath.draw(canvasToDrawOn, paint);
   }
 }
 

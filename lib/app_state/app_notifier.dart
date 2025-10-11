@@ -11,7 +11,8 @@ class AppNotifier extends Notifier<AppModel> {
     return const AppModel(
       name: 'Default Name',
       age: 0,
-      activeTool: ActiveTool.selectTool,
+      activeTool: ActiveTool
+          .penTool, // starting with pen tool just to make debugging faster
     );
   }
 

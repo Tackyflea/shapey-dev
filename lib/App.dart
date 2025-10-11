@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_layout_grid/flutter_layout_grid.dart';
-
+import 'package:shapey/theme.dart';
+import 'package:shapey/utility/Utility.dart';
 import 'sections/StageWidget.dart';
 import 'sections/ToolsWidget.dart';
 import 'sections/TopWidget.dart';
@@ -10,10 +11,13 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = View.of(context).platformDispatcher.platformBrightness;
+    TextTheme textTheme = createTextTheme(context, "Roboto", "Fredoka");
+
+    MaterialTheme theme = MaterialTheme(textTheme);
     return MaterialApp(
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      title: 'Shapey',
+      theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       home: const MyHomePage(),
     );
   }
@@ -31,6 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     FixedTrackSize tooltipWidth = 150.px;
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceDim,
       body: Center(
         //https://pub.dev/documentation/flutter_layout_grid/latest/
         child: LayoutGrid(
