@@ -53,20 +53,39 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   }
 
   void updateStage(dynamic details) {
-    MousePosition.x = details.localPosition.dx;
-    MousePosition.y = details.localPosition.dy;
+    MousePosition = Vector2(details.localPosition.dx, details.localPosition.dy);
   }
 
   @override
   Widget build(BuildContext context) {
     var appData = ref.watch(appNotifier);
+    // tell drawy what mode we're on for performance
+    drawy.activeTool = appData.activeTool;
+    var penMode = appData.activeTool == ActiveTool.penTool;
+    var selectMode = appData.activeTool == ActiveTool.selectTool;
+
     return GestureDetector(
       onPanDown: (details) {
         updateStage(details);
 
-        if (appData.activeTool == ActiveTool.penTool) {
-          drawy.penMode(MousePosition);
-        }
+        if (penMode) drawy.penMode(MousePosition);
+
+        if (selectMode) drawy.selectModeStart(MousePosition);
+
+        _repaintNotifier.value = !_repaintNotifier.value;
+      },
+      onPanUpdate: (details) {
+        updateStage(details);
+        if (selectMode) drawy.selectModeMove(MousePosition);
+        _repaintNotifier.value = !_repaintNotifier.value;
+      },
+      onPanEnd: (details) {
+        if (selectMode) drawy.selectModeEnd();
+        _repaintNotifier.value = !_repaintNotifier.value;
+      },
+
+      onPanCancel: () {
+        if (selectMode) drawy.selectModeEnd();
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       // onPanUpdate: (details) {
@@ -104,7 +123,7 @@ class _ShapeCanvasPainter extends CustomPainter {
       );
       canvas.save();
       // el.ctx.scale(scale, scale);
-      canvas.drawRect(Rect.fromLTWH(0, 0, 60, 60), boxPaint);
+      canvas.drawRect(Rect.fromLTWH(0, 0, 20, 20), boxPaint);
       canvas.drawPicture(pictureInfo!.picture);
       // drawy.line(Offset(133, 55), Offset(mousePosition.x, mousePosition.y));
       drawy.update();

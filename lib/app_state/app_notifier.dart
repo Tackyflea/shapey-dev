@@ -21,6 +21,7 @@ class AppNotifier extends Notifier<AppModel> {
   }
 
   void updateTool(ActiveTool activeTool) {
+    print("new Tool: " + activeTool.toString());
     state = state.copyWith(activeTool: activeTool);
   }
 
