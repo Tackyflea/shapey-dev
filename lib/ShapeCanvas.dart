@@ -39,6 +39,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       });
     });
 
+    drawy.setup();
     // test draws
     drawy.addLine([Vector2(20, 40), Vector2(449, 111), Vector2(249, 111)]);
     drawy.addLine([Vector2(120, 40), Vector2(33, 111), Vector2(22, 900)]);

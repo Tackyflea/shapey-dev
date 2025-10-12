@@ -15,10 +15,11 @@ class Drawy {
   List<DrawyPath> drawPaths = [];
 
   // PEN SETTINGS
-  // the point index( if any) you clicked on when you started dragging
-  int penPointSelectedIndex = -1;
+  // Pen is a custom live path, that we can swap the definition of
+  // depending on what you want to add points to
   DrawyPath penPath = DrawyPath(pathPoints: []);
-
+  DrawyPath? activePath;
+  int activePathSelectedIndex = -1;
   var paint = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
     ..strokeWidth = 2
@@ -33,6 +34,11 @@ class Drawy {
     ..style = PaintingStyle.stroke;
   void setCanvas(Canvas newCtx) {
     canvasToDrawOn = newCtx;
+  }
+
+  void setup() {
+    // add dynamic pen path to the general path list
+    drawPaths.add(penPath);
   }
 
   void line(Offset p1, Offset p2) => canvasToDrawOn.drawLine(p1, p2, paint);
@@ -51,47 +57,77 @@ class Drawy {
 
   // try to fetch a nearby pen point
   void selectModeStart(Vector2 mousePosition) {
-    penPointSelectedIndex = getClosestVectorIndexToVector(
-      mousePosition,
-      penPath.pathPoints,
-    );
+    var (nearPath, nearIndex) = getClosestPointOnAPath(mousePosition);
+    if (nearPath != null) {
+      activePath = nearPath;
+      activePathSelectedIndex = nearIndex;
+    }
   }
 
   // if we can move around a pen point, move it
   void selectModeMove(Vector2 mousePosition) {
-    if (penPointSelectedIndex != -1) {
-      penPath.pathPoints[penPointSelectedIndex] = mousePosition;
-      penPath.converPointsToPath();
+    bool youHaveAPathSelected =
+        activePath != null && activePathSelectedIndex != -1;
+
+    if (youHaveAPathSelected) {
+      activePath!.pathPoints[activePathSelectedIndex] = mousePosition;
+      activePath!.converPointsToPath();
     }
   }
 
   // resets pen
   void selectModeEnd() {
-    penPointSelectedIndex = -1;
+    activePath = null;
+    activePathSelectedIndex = -1;
   }
 
   void update() {
-    // generic paths
-    var paths = drawPaths;
-    for (var path in paths) {
+    // DRAW
+
+    // draw all paths
+    for (var path in drawPaths) {
       path.draw(canvasToDrawOn, paint);
     }
-
-    penPath.draw(canvasToDrawOn, paint);
 
     // GUIDE LAYERS
 
     // pen paths
     // draw some guides in select mode
     if (activeTool == ActiveTool.selectTool) {
-      if (penPointSelectedIndex != -1) {
-        drawGuidePoint(penPath.pathPoints[penPointSelectedIndex]);
+      final pathNullChecked = activePath;
+      // check we both have a path and the index is IN the path
+      if (pathNullChecked != null && activePathSelectedIndex != -1) {
+        drawGuidePoint(pathNullChecked.pathPoints[activePathSelectedIndex]);
       }
     }
   }
 
   // Utility
-  int getClosestVectorIndexToVector(
+
+  // Try to find the closest path to the vector you supply
+  // AND the point at which you hit the path
+  (DrawyPath? pathToGet, int pathIndex) getClosestPointOnAPath(
+    Vector2 vectorToCheck,
+  ) {
+    DrawyPath? returnPath;
+    int returnIndex = -1;
+    var nearestDistance = double.infinity;
+    for (DrawyPath pathToCheck in drawPaths) {
+      var (nearIndex, distanceReturned) = getClosestVectorIndexToVector(
+        vectorToCheck,
+        pathToCheck.pathPoints,
+      );
+      if (nearIndex != -1 && distanceReturned < nearestDistance) {
+        nearestDistance = distanceReturned;
+        // assign the active path to the closest path to the interaction
+        returnPath = pathToCheck;
+        returnIndex = nearIndex;
+      }
+    }
+    return (returnPath, returnIndex);
+  }
+
+  (int index, double distance) getClosestVectorIndexToVector(
     Vector2 vectorToCheck,
     List<Vector2> vectorsToCheckAgainst,
   ) {
@@ -106,7 +142,7 @@ class Drawy {
         index = i;
       }
     }
-    return index;
+    return (index, closestDistance);
   }
 
   void drawGuidePoint(Vector2 position) {

@@ -16,7 +16,7 @@ class RightClickViewer extends StatefulWidget {
     required this.child,
     this.minScale = 0.01,
     this.maxScale = 8,
-    this.scaleFactor = 4000,
+    this.scaleFactor = 900,
   });
 
   @override
