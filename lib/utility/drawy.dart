@@ -7,6 +7,11 @@ import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/enums/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
+// max distance to check for from center, when trying to click on a point
+double MAX_DISTANCE_TO_POINT = 550;
+// min distance in pen mode, after which we declare that we're in drag mode
+double PEN_MINIMUM_DRAG_DISTANCE = 50;
+
 class Drawy {
   late Canvas canvasToDrawOn;
   late ActiveTool activeTool = ActiveTool.selectTool;
@@ -58,11 +63,44 @@ class Drawy {
   }
 
   // Draws a pan path along mouse position points
-  void penMode(Vector2 mousePosition) {
-    DrawyPoint newPoint = DrawyPoint(position: mousePosition);
-    penPath.addPoint(newPoint);
-    // reconverPointsToPath path based off new data
-    penPath.converPointsToPath();
+  void penMode(InteractType interact, Vector2 mousePosition) {
+    // START
+    if (interact == InteractType.START) {
+      DrawyPoint newPoint = DrawyPoint(position: mousePosition);
+      penPath.addPoint(newPoint);
+      // reconverPointsToPath path based off new data
+      penPath.converPointsToPath();
+
+      var tempPath = penPath;
+      // This might be kind of overkill, since atm we already KNOW it's the path.lenght - 1
+      // but maybe we won't in the future
+      activePathSelectedIndex = tempPath.getPointAsVectors().indexOf(
+        newPoint.position,
+      );
+      activePath = tempPath;
+    }
+    if (interact == InteractType.MOVE && activePath != null) {
+      var activePoint = activePath?.pathPoints[activePathSelectedIndex];
+      // grab how far we moved
+      var position = activePoint?.position;
+      var distanceMoved = position?.distanceToSquared(mousePosition);
+
+      if (distanceMoved == null || activePoint == null || position == null)
+        return;
+      if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
+
+      // Since we're now in drag mode, we're adding a control point to wherever
+      // the mouse is at now
+      var offsetPosition = (mousePosition - position);
+      activePoint.cubicControlPointA = (position) - offsetPosition;
+      activePoint.cubicControlPointB = (position) + offsetPosition;
+      // reconverPointsToPath path based off new data
+      penPath.converPointsToPath();
+    }
+
+    if (interact == InteractType.END) {
+      // print('end');
+    }
   }
 
   // try to fetch a nearby pen point
@@ -73,6 +111,10 @@ class Drawy {
       if (nearPath != null) {
         activePath = nearPath;
         activePathSelectedIndex = nearIndex;
+      } else {
+        // reset if we havent found anything
+        activePath = null;
+        activePathSelectedIndex = -1;
       }
     }
 
@@ -82,17 +124,32 @@ class Drawy {
           activePath != null && activePathSelectedIndex != -1;
 
       if (youHaveAPathSelected) {
-        activePath!.pathPoints[activePathSelectedIndex] = DrawyPoint(
+        var currentSelectedPoint =
+            activePath?.pathPoints[activePathSelectedIndex];
+
+        // Bezier logic on drag, could be overkill
+        var currentBezierA = currentSelectedPoint?.cubicControlPointA;
+        var currentBezierB = currentSelectedPoint?.cubicControlPointB;
+        if (currentSelectedPoint != null &&
+            currentBezierA != null &&
+            currentBezierB != null) {
+          currentBezierA -= (currentSelectedPoint.position - mousePosition);
+          currentBezierB -= (currentSelectedPoint.position - mousePosition);
+        }
+
+        activePath?.pathPoints[activePathSelectedIndex] = DrawyPoint(
           position: mousePosition,
+          cubicControlPointA: currentBezierA,
+          cubicControlPointB: currentBezierB,
         );
-        activePath!.converPointsToPath();
+        activePath?.converPointsToPath();
       }
     }
 
     // End Drag
     if (interact == InteractType.END) {
-      activePath = null;
-      activePathSelectedIndex = -1;
+      // activePath = null;
+      // activePathSelectedIndex = -1;
     }
   }
 
@@ -108,13 +165,17 @@ class Drawy {
     // GUIDE LAYERS
 
     // pen paths
-    // draw some guides in select mode
-    if (activeTool == ActiveTool.selectTool) {
-      final pathNullChecked = activePath;
-      // check we both have a path and the index is IN the path
-      if (pathNullChecked != null && activePathSelectedIndex != -1) {
-        drawGuidePoint(pathNullChecked.pathPoints[activePathSelectedIndex]);
-      }
+    final pathNullChecked = activePath;
+    // check we both have a path and the index is IN the path
+    if (pathNullChecked != null && activePathSelectedIndex != -1) {
+      DrawyPoint selectedPoint =
+          pathNullChecked.pathPoints[activePathSelectedIndex];
+
+      // draw guides
+      drawGuidePoint(selectedPoint.position);
+      // and potential bezier guides. Null checks inside function
+      drawGuidePoint(selectedPoint.cubicControlPointA);
+      drawGuidePoint(selectedPoint.cubicControlPointB);
     }
   }
 
@@ -147,28 +208,27 @@ class Drawy {
     Vector2 vectorToCheck,
     List<DrawyPoint> pointsToCheckAgainst,
   ) {
-    // arbitrary for now , max distance to check against
-    double closestDistance = 550;
     int index = -1;
+    var distanceToCheckAgainst = MAX_DISTANCE_TO_POINT;
     int amountOfPoints = pointsToCheckAgainst.length;
     for (int i = 0; i < amountOfPoints; i++) {
       var pt = pointsToCheckAgainst[i].position;
-      if (pt == null) {
-        continue;
-      }
       var distance = pt.distanceToSquared(vectorToCheck);
-      if (closestDistance > distance) {
-        closestDistance = distance;
+      if (distanceToCheckAgainst > distance) {
+        distanceToCheckAgainst = distance;
         index = i;
       }
     }
-    return (index, closestDistance);
+    return (index, distanceToCheckAgainst);
   }
 
-  void drawGuidePoint(DrawyPoint point) {
+  void drawGuidePoint(Vector2? position) {
+    if (position == null) {
+      return;
+    }
     canvasToDrawOn.drawRect(
       Rect.fromCenter(
-        center: Offset(point.position.x, point.position.y),
+        center: Offset(position.x, position.y),
         width: 10,
         height: 10,
       ),
@@ -176,7 +236,7 @@ class Drawy {
     );
     canvasToDrawOn.drawRect(
       Rect.fromCenter(
-        center: Offset(point.position.x, point.position.y),
+        center: Offset(position.x, position.y),
         width: 10,
         height: 10,
       ),
@@ -188,9 +248,14 @@ class Drawy {
 // Generic Point which can be expanded with more data than just position
 class DrawyPoint {
   Vector2 position;
-  final Vector2? bezierControlPoint;
+  Vector2? cubicControlPointA;
+  Vector2? cubicControlPointB;
 
-  DrawyPoint({required this.position, this.bezierControlPoint});
+  DrawyPoint({
+    required this.position,
+    this.cubicControlPointA,
+    this.cubicControlPointB,
+  });
 }
 
 // Generic Path wrapper, allows keeping info in a clean point list instead of relying on
@@ -214,12 +279,30 @@ class DrawyPath {
     var ptCount = pathPoints.length;
     path.reset();
     for (var i = 0; i < ptCount; i++) {
-      var pt = pathPoints[i].position;
+      var endPosition = pathPoints[i].position;
+      var cubicControlPointA = pathPoints[i].cubicControlPointA;
+      var cubicControlPointB = pathPoints[i].cubicControlPointB;
 
       if (i == 0) {
-        path.moveTo(pt.x, pt.y);
+        // first point just tap
+        path.moveTo(endPosition.x, endPosition.y);
       } else {
-        path.lineTo(pt.x, pt.y);
+        // second point add points
+        if (cubicControlPointA != null && cubicControlPointB != null) {
+          // curve into position if we have a curve point
+          path.cubicTo(
+            cubicControlPointA.x,
+            cubicControlPointA.y,
+
+            cubicControlPointA.x,
+            cubicControlPointA.y,
+            endPosition.x,
+            endPosition.y,
+          );
+        } else {
+          // back up to just line
+          path.lineTo(endPosition.x, endPosition.y);
+        }
       }
       // if (i == ptCount - 1) {
       //   path.close();
@@ -228,4 +311,11 @@ class DrawyPath {
   }
 
   List<DrawyPoint> getPoints() => pathPoints;
+  List<Vector2> getPointAsVectors() {
+    List<Vector2> list = [];
+    for (var pt in pathPoints) {
+      list.add(pt.position);
+    }
+    return list;
+  }
 }

@@ -70,7 +70,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       onPanDown: (details) {
         updateStage(details);
 
-        if (penMode) drawy.penMode(MousePosition);
+        if (penMode) drawy.penMode(InteractType.START, MousePosition);
 
         if (selectMode) drawy.selectMode(InteractType.START, MousePosition);
 
@@ -79,10 +79,12 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       onPanUpdate: (details) {
         updateStage(details);
         if (selectMode) drawy.selectMode(InteractType.MOVE, MousePosition);
+        if (penMode) drawy.penMode(InteractType.MOVE, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanEnd: (details) {
         if (selectMode) drawy.selectMode(InteractType.END, MousePosition);
+        if (penMode) drawy.penMode(InteractType.END, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
 
