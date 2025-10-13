@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:shapey/enums/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 class Drawy {
@@ -20,6 +21,7 @@ class Drawy {
   DrawyPath penPath = DrawyPath(pathPoints: []);
   DrawyPath? activePath;
   int activePathSelectedIndex = -1;
+
   var paint = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
     ..strokeWidth = 2
@@ -42,49 +44,63 @@ class Drawy {
   }
 
   void line(Offset p1, Offset p2) => canvasToDrawOn.drawLine(p1, p2, paint);
-  void addLine(List<Vector2> points) {
-    var newPath = DrawyPath(pathPoints: points);
+  void addLine(List<Vector2> positions) {
+    // so we can keep drawypoints as an internal class
+    // we convert it inside
+
+    List<DrawyPoint> drawyPointList = [];
+    for (var pos in positions) {
+      drawyPointList.add(DrawyPoint(position: pos));
+    }
+    var newPath = DrawyPath(pathPoints: drawyPointList);
     newPath.converPointsToPath();
     drawPaths.add(newPath);
   }
 
   // Draws a pan path along mouse position points
   void penMode(Vector2 mousePosition) {
-    penPath.addPoint(mousePosition);
+    DrawyPoint newPoint = DrawyPoint(position: mousePosition);
+    penPath.addPoint(newPoint);
     // reconverPointsToPath path based off new data
     penPath.converPointsToPath();
   }
 
   // try to fetch a nearby pen point
-  void selectModeStart(Vector2 mousePosition) {
-    var (nearPath, nearIndex) = getClosestPointOnAPath(mousePosition);
-    if (nearPath != null) {
-      activePath = nearPath;
-      activePathSelectedIndex = nearIndex;
+  void selectMode(InteractType interact, Vector2 mousePosition) {
+    // Start Drag
+    if (interact == InteractType.START) {
+      var (nearPath, nearIndex) = getClosestPointOnAPath(mousePosition);
+      if (nearPath != null) {
+        activePath = nearPath;
+        activePathSelectedIndex = nearIndex;
+      }
     }
-  }
 
-  // if we can move around a pen point, move it
-  void selectModeMove(Vector2 mousePosition) {
-    bool youHaveAPathSelected =
-        activePath != null && activePathSelectedIndex != -1;
+    // Move Drag
+    if (interact == InteractType.MOVE) {
+      bool youHaveAPathSelected =
+          activePath != null && activePathSelectedIndex != -1;
 
-    if (youHaveAPathSelected) {
-      activePath!.pathPoints[activePathSelectedIndex] = mousePosition;
-      activePath!.converPointsToPath();
+      if (youHaveAPathSelected) {
+        activePath!.pathPoints[activePathSelectedIndex] = DrawyPoint(
+          position: mousePosition,
+        );
+        activePath!.converPointsToPath();
+      }
     }
-  }
 
-  // resets pen
-  void selectModeEnd() {
-    activePath = null;
-    activePathSelectedIndex = -1;
+    // End Drag
+    if (interact == InteractType.END) {
+      activePath = null;
+      activePathSelectedIndex = -1;
+    }
   }
 
   void update() {
     // DRAW
 
     // draw all paths
+    // Todo , swap this with a static list
     for (var path in drawPaths) {
       path.draw(canvasToDrawOn, paint);
     }
@@ -129,14 +145,18 @@ class Drawy {
 
   (int index, double distance) getClosestVectorIndexToVector(
     Vector2 vectorToCheck,
-    List<Vector2> vectorsToCheckAgainst,
+    List<DrawyPoint> pointsToCheckAgainst,
   ) {
     // arbitrary for now , max distance to check against
     double closestDistance = 550;
     int index = -1;
-    int amountOfPoints = vectorsToCheckAgainst.length;
+    int amountOfPoints = pointsToCheckAgainst.length;
     for (int i = 0; i < amountOfPoints; i++) {
-      var distance = vectorsToCheckAgainst[i].distanceToSquared(vectorToCheck);
+      var pt = pointsToCheckAgainst[i].position;
+      if (pt == null) {
+        continue;
+      }
+      var distance = pt.distanceToSquared(vectorToCheck);
       if (closestDistance > distance) {
         closestDistance = distance;
         index = i;
@@ -145,10 +165,10 @@ class Drawy {
     return (index, closestDistance);
   }
 
-  void drawGuidePoint(Vector2 position) {
+  void drawGuidePoint(DrawyPoint point) {
     canvasToDrawOn.drawRect(
       Rect.fromCenter(
-        center: Offset(position.x, position.y),
+        center: Offset(point.position.x, point.position.y),
         width: 10,
         height: 10,
       ),
@@ -156,7 +176,7 @@ class Drawy {
     );
     canvasToDrawOn.drawRect(
       Rect.fromCenter(
-        center: Offset(position.x, position.y),
+        center: Offset(point.position.x, point.position.y),
         width: 10,
         height: 10,
       ),
@@ -165,8 +185,18 @@ class Drawy {
   }
 }
 
+// Generic Point which can be expanded with more data than just position
+class DrawyPoint {
+  Vector2 position;
+  final Vector2? bezierControlPoint;
+
+  DrawyPoint({required this.position, this.bezierControlPoint});
+}
+
+// Generic Path wrapper, allows keeping info in a clean point list instead of relying on
+// built in path data
 class DrawyPath {
-  List<Vector2> pathPoints = [];
+  List<DrawyPoint> pathPoints = [];
 
   DrawyPath({required this.pathPoints});
 
@@ -176,7 +206,7 @@ class DrawyPath {
     canvasToDrawOn.drawPath(path, paintToDrawWith);
   }
 
-  void addPoint(Vector2 newPoint) {
+  void addPoint(DrawyPoint newPoint) {
     pathPoints.add(newPoint);
   }
 
@@ -184,7 +214,8 @@ class DrawyPath {
     var ptCount = pathPoints.length;
     path.reset();
     for (var i = 0; i < ptCount; i++) {
-      var pt = pathPoints[i];
+      var pt = pathPoints[i].position;
+
       if (i == 0) {
         path.moveTo(pt.x, pt.y);
       } else {
@@ -196,5 +227,5 @@ class DrawyPath {
     }
   }
 
-  List<Vector2> getPoints() => pathPoints;
+  List<DrawyPoint> getPoints() => pathPoints;
 }

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_notifier.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:shapey/enums/e_interact_type.dart';
 import 'package:shapey/utility/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
@@ -71,22 +72,22 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
         if (penMode) drawy.penMode(MousePosition);
 
-        if (selectMode) drawy.selectModeStart(MousePosition);
+        if (selectMode) drawy.selectMode(InteractType.START, MousePosition);
 
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanUpdate: (details) {
         updateStage(details);
-        if (selectMode) drawy.selectModeMove(MousePosition);
+        if (selectMode) drawy.selectMode(InteractType.MOVE, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanEnd: (details) {
-        if (selectMode) drawy.selectModeEnd();
+        if (selectMode) drawy.selectMode(InteractType.END, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
 
       onPanCancel: () {
-        if (selectMode) drawy.selectModeEnd();
+        if (selectMode) drawy.selectMode(InteractType.END, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       // onPanUpdate: (details) {
