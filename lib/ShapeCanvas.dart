@@ -70,26 +70,26 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       onPanDown: (details) {
         updateStage(details);
 
-        if (penMode) drawy.penMode(DrawyInteract.START, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.start, MousePosition);
 
-        if (selectMode) drawy.selectMode(DrawyInteract.START, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.start, MousePosition);
 
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanUpdate: (details) {
         updateStage(details);
-        if (selectMode) drawy.selectMode(DrawyInteract.MOVE, MousePosition);
-        if (penMode) drawy.penMode(DrawyInteract.MOVE, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.move, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.move, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanEnd: (details) {
-        if (selectMode) drawy.selectMode(DrawyInteract.END, MousePosition);
-        if (penMode) drawy.penMode(DrawyInteract.END, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.end, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.end, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
 
       onPanCancel: () {
-        if (selectMode) drawy.selectMode(DrawyInteract.END, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.end, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       // onPanUpdate: (details) {

@@ -21,7 +21,7 @@ class AppNotifier extends Notifier<AppModel> {
   }
 
   void updateTool(ActiveTool activeTool) {
-    print("new Tool: " + activeTool.toString());
+    print("new Tool: $activeTool");
     state = state.copyWith(activeTool: activeTool);
   }
 
@@ -30,8 +30,8 @@ class AppNotifier extends Notifier<AppModel> {
   }
 
   String get name => state.name ?? 'Default Name';
-  int get age => state.age ?? 0;
-  ActiveTool get activeTool => state.activeTool ?? ActiveTool.selectTool;
+  int get age => state.age;
+  ActiveTool get activeTool => state.activeTool;
 }
 
 // the provider

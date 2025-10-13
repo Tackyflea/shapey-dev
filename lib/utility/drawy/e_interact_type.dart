@@ -1,2 +1,2 @@
 // for mouse / touch interaction simplicity
-enum DrawyInteract { START, MOVE, END }
+enum DrawyInteract { start, move, end }

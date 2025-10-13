@@ -8,9 +8,11 @@ import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 // max distance to check for from center, when trying to click on a point
-double MAX_DISTANCE_TO_POINT = 550;
+double MAX_DISTANCE_TO_POINT = 450;
 // min distance in pen mode, after which we declare that we're in drag mode
 double PEN_MINIMUM_DRAG_DISTANCE = 50;
+
+enum DrawyBezierSelected { none, A, B }
 
 class Drawy {
   late Canvas canvasToDrawOn;
@@ -25,12 +27,10 @@ class Drawy {
   // depending on what you want to add points to
   DrawyPath penPath = DrawyPath(pathPoints: []);
   DrawyPath? activePath;
+  DrawyBezierSelected activeBezier =
+      DrawyBezierSelected.none; // for tweaking paths
   int activePathSelectedIndex = -1;
 
-  var paint = Paint()
-    ..color = Color.fromARGB(255, 28, 134, 236)
-    ..strokeWidth = 2
-    ..style = PaintingStyle.stroke;
   var GUIDE_PEN_PAINT_FILL = Paint()
     ..color = Color.fromRGBO(22, 201, 255, 0.196)
     ..style = PaintingStyle.fill;
@@ -38,6 +38,11 @@ class Drawy {
   var GUIDE_PEN_PAINT_STROKE = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
     ..strokeWidth = 1
+    ..style = PaintingStyle.stroke;
+
+  var PEN_DEFAULT_STROKE = Paint()
+    ..color = Color.fromARGB(255, 28, 134, 236)
+    ..strokeWidth = 2
     ..style = PaintingStyle.stroke;
   void setCanvas(Canvas newCtx) {
     canvasToDrawOn = newCtx;
@@ -48,7 +53,8 @@ class Drawy {
     drawPaths.add(penPath);
   }
 
-  void line(Offset p1, Offset p2) => canvasToDrawOn.drawLine(p1, p2, paint);
+  void line(Offset p1, Offset p2) =>
+      canvasToDrawOn.drawLine(p1, p2, PEN_DEFAULT_STROKE);
   void addLine(List<Vector2> positions) {
     // so we can keep drawypoints as an internal class
     // we convert it inside
@@ -65,7 +71,7 @@ class Drawy {
   // Draws a pan path along mouse position points
   void penMode(DrawyInteract interact, Vector2 mousePosition) {
     // START
-    if (interact == DrawyInteract.START) {
+    if (interact == DrawyInteract.start) {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
       penPath.addPoint(newPoint);
       // reconverPointsToPath path based off new data
@@ -77,17 +83,22 @@ class Drawy {
       activePathSelectedIndex = tempPath.getPointAsVectors().indexOf(
         newPoint.position,
       );
+
       activePath = tempPath;
     }
-    if (interact == DrawyInteract.MOVE && activePath != null) {
+    if (interact == DrawyInteract.move && activePath != null) {
       var activePoint = activePath?.pathPoints[activePathSelectedIndex];
       // grab how far we moved
       var position = activePoint?.position;
       var distanceMoved = position?.distanceToSquared(mousePosition);
-
+      // early return if you havent moved enough, or active point gets lost
       if (distanceMoved == null || activePoint == null || position == null)
         return;
       if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
+      // (TODO: Find out if needed) early return if you're in the first point since theres nothing to curve
+      if (activePathSelectedIndex == 0) {
+        return;
+      }
 
       // Since we're now in drag mode, we're adding a control point to wherever
       // the mouse is at now
@@ -98,7 +109,7 @@ class Drawy {
       penPath.converPointsToPath();
     }
 
-    if (interact == DrawyInteract.END) {
+    if (interact == DrawyInteract.end) {
       // print('end');
     }
   }
@@ -106,7 +117,28 @@ class Drawy {
   // try to fetch a nearby pen point
   void selectMode(DrawyInteract interact, Vector2 mousePosition) {
     // Start Drag
-    if (interact == DrawyInteract.START) {
+    if (interact == DrawyInteract.start) {
+      // BEZIER ACTIVE CHECK
+      // TODO: Implement cubic tweaking on select
+      var tempPoint = activePath?.pathPoints[activePathSelectedIndex];
+      if (tempPoint != null) {
+        // check if youre trying to edit hte beziers, if they exist
+        Vector2? cubicPtA = tempPoint.cubicControlPointA,
+            cubicPtB = tempPoint.cubicControlPointB;
+
+        if (cubicPtA != null &&
+            cubicPtA.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT) {
+          activeBezier = DrawyBezierSelected.A;
+          return;
+        }
+        if (cubicPtB != null &&
+            cubicPtB.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT) {
+          activeBezier = DrawyBezierSelected.B;
+          return;
+        }
+      }
+
+      // try to find a near path
       var (nearPath, nearIndex) = getClosestPointOnAPath(mousePosition);
       if (nearPath != null) {
         activePath = nearPath;
@@ -119,16 +151,37 @@ class Drawy {
     }
 
     // Move Drag
-    if (interact == DrawyInteract.MOVE) {
+    if (interact == DrawyInteract.move) {
       bool youHaveAPathSelected = activePath != null;
 
       if (youHaveAPathSelected) {
         final List<DrawyPoint>? tempPoints = activePath?.pathPoints;
-
         final currentSelectedPoint = tempPoints?[activePathSelectedIndex];
+
         if (currentSelectedPoint != null) {
-          // Bezier logic on drag, could be overkill
           final delta = currentSelectedPoint.position - mousePosition;
+          // BEZIER move mode
+          if (activeBezier != DrawyBezierSelected.none) {
+            // These are currently mirrors of themselves
+            // TODO: Figure out how to split beziers properly so you can individually control them
+            Vector2? ctrlA = currentSelectedPoint.cubicControlPointA;
+            if (activeBezier == DrawyBezierSelected.A && ctrlA != null) {
+              currentSelectedPoint.cubicControlPointB =
+                  currentSelectedPoint.position + delta;
+              currentSelectedPoint.cubicControlPointA =
+                  currentSelectedPoint.position - delta;
+            }
+            if (activeBezier == DrawyBezierSelected.B) {
+              currentSelectedPoint.cubicControlPointB =
+                  currentSelectedPoint.position - delta;
+              currentSelectedPoint.cubicControlPointA =
+                  currentSelectedPoint.position + delta;
+            }
+            activePath?.converPointsToPath();
+            return;
+          }
+
+          // POINT move mode
           Vector2? controlA = currentSelectedPoint.cubicControlPointA,
               controlB = currentSelectedPoint.cubicControlPointB;
 
@@ -140,15 +193,17 @@ class Drawy {
             cubicControlPointA: newBezierA,
             cubicControlPointB: newBezierB,
           );
+
           activePath?.converPointsToPath();
         }
       }
     }
 
     // End Drag
-    if (interact == DrawyInteract.END) {
+    if (interact == DrawyInteract.end) {
       // activePath = null;
       // activePathSelectedIndex = -1;
+      activeBezier = DrawyBezierSelected.none;
     }
   }
 
@@ -158,7 +213,7 @@ class Drawy {
     // draw all paths
     // Todo , swap this with a static list
     for (var path in drawPaths) {
-      path.draw(canvasToDrawOn, paint);
+      path.draw(canvasToDrawOn, PEN_DEFAULT_STROKE);
     }
 
     // GUIDE LAYERS
@@ -172,9 +227,13 @@ class Drawy {
 
       // draw guides
       drawGuidePoint(selectedPoint.position);
-      // and potential bezier guides. Null checks inside function
-      drawGuidePoint(selectedPoint.cubicControlPointA);
-      drawGuidePoint(selectedPoint.cubicControlPointB);
+
+      if (selectedPoint.cubicControlPointA != null) {
+        drawGuidePoint(selectedPoint.cubicControlPointA);
+      }
+      if (selectedPoint.cubicControlPointB != null) {
+        drawGuidePoint(selectedPoint.cubicControlPointB);
+      }
     }
   }
 
@@ -212,6 +271,7 @@ class Drawy {
     int amountOfPoints = pointsToCheckAgainst.length;
     for (int i = 0; i < amountOfPoints; i++) {
       var pt = pointsToCheckAgainst[i].position;
+      // POSITION CHECK
       var distance = pt.distanceToSquared(vectorToCheck);
       if (distanceToCheckAgainst > distance) {
         distanceToCheckAgainst = distance;
@@ -247,6 +307,7 @@ class Drawy {
 // Generic Point which can be expanded with more data than just position
 class DrawyPoint {
   Vector2 position;
+  // control points are for MATH for controls
   Vector2? cubicControlPointA;
   Vector2? cubicControlPointB;
 
@@ -316,5 +377,21 @@ class DrawyPath {
       list.add(pt.position);
     }
     return list;
+  }
+}
+
+class DrawyGuide {
+  DrawyPoint pathPoint;
+
+  DrawyGuide({required this.pathPoint});
+
+  var path = Path();
+
+  void draw(Canvas canvasToDrawOn, Paint paintToDrawWith) {
+    // canvasToDrawOn.drawPath(path, paintToDrawWith);
+  }
+
+  void addGuide(DrawyPoint newPoint) {
+    // pathPoints.add(newPoint);
   }
 }
