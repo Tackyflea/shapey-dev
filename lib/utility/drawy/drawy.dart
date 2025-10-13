@@ -4,7 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shapey/enums/e_active_tool.dart';
-import 'package:shapey/enums/e_interact_type.dart';
+import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 // max distance to check for from center, when trying to click on a point
@@ -63,9 +63,9 @@ class Drawy {
   }
 
   // Draws a pan path along mouse position points
-  void penMode(InteractType interact, Vector2 mousePosition) {
+  void penMode(DrawyInteract interact, Vector2 mousePosition) {
     // START
-    if (interact == InteractType.START) {
+    if (interact == DrawyInteract.START) {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
       penPath.addPoint(newPoint);
       // reconverPointsToPath path based off new data
@@ -79,7 +79,7 @@ class Drawy {
       );
       activePath = tempPath;
     }
-    if (interact == InteractType.MOVE && activePath != null) {
+    if (interact == DrawyInteract.MOVE && activePath != null) {
       var activePoint = activePath?.pathPoints[activePathSelectedIndex];
       // grab how far we moved
       var position = activePoint?.position;
@@ -98,15 +98,15 @@ class Drawy {
       penPath.converPointsToPath();
     }
 
-    if (interact == InteractType.END) {
+    if (interact == DrawyInteract.END) {
       // print('end');
     }
   }
 
   // try to fetch a nearby pen point
-  void selectMode(InteractType interact, Vector2 mousePosition) {
+  void selectMode(DrawyInteract interact, Vector2 mousePosition) {
     // Start Drag
-    if (interact == InteractType.START) {
+    if (interact == DrawyInteract.START) {
       var (nearPath, nearIndex) = getClosestPointOnAPath(mousePosition);
       if (nearPath != null) {
         activePath = nearPath;
@@ -119,35 +119,34 @@ class Drawy {
     }
 
     // Move Drag
-    if (interact == InteractType.MOVE) {
-      bool youHaveAPathSelected =
-          activePath != null && activePathSelectedIndex != -1;
+    if (interact == DrawyInteract.MOVE) {
+      bool youHaveAPathSelected = activePath != null;
 
       if (youHaveAPathSelected) {
-        var currentSelectedPoint =
-            activePath?.pathPoints[activePathSelectedIndex];
+        final List<DrawyPoint>? tempPoints = activePath?.pathPoints;
 
-        // Bezier logic on drag, could be overkill
-        var currentBezierA = currentSelectedPoint?.cubicControlPointA;
-        var currentBezierB = currentSelectedPoint?.cubicControlPointB;
-        if (currentSelectedPoint != null &&
-            currentBezierA != null &&
-            currentBezierB != null) {
-          currentBezierA -= (currentSelectedPoint.position - mousePosition);
-          currentBezierB -= (currentSelectedPoint.position - mousePosition);
+        final currentSelectedPoint = tempPoints?[activePathSelectedIndex];
+        if (currentSelectedPoint != null) {
+          // Bezier logic on drag, could be overkill
+          final delta = currentSelectedPoint.position - mousePosition;
+          Vector2? controlA = currentSelectedPoint.cubicControlPointA,
+              controlB = currentSelectedPoint.cubicControlPointB;
+
+          Vector2? newBezierA = controlA != null ? controlA - delta : null;
+          Vector2? newBezierB = controlB != null ? controlB - delta : null;
+
+          tempPoints?[activePathSelectedIndex] = DrawyPoint(
+            position: mousePosition,
+            cubicControlPointA: newBezierA,
+            cubicControlPointB: newBezierB,
+          );
+          activePath?.converPointsToPath();
         }
-
-        activePath?.pathPoints[activePathSelectedIndex] = DrawyPoint(
-          position: mousePosition,
-          cubicControlPointA: currentBezierA,
-          cubicControlPointB: currentBezierB,
-        );
-        activePath?.converPointsToPath();
       }
     }
 
     // End Drag
-    if (interact == InteractType.END) {
+    if (interact == DrawyInteract.END) {
       // activePath = null;
       // activePathSelectedIndex = -1;
     }

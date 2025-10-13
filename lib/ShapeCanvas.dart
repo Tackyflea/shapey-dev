@@ -3,8 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_notifier.dart';
 import 'package:shapey/enums/e_active_tool.dart';
-import 'package:shapey/enums/e_interact_type.dart';
-import 'package:shapey/utility/drawy.dart';
+import 'package:shapey/utility/drawy/e_interact_type.dart';
+import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 // SHAPE CANVAS
@@ -70,26 +70,26 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       onPanDown: (details) {
         updateStage(details);
 
-        if (penMode) drawy.penMode(InteractType.START, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.START, MousePosition);
 
-        if (selectMode) drawy.selectMode(InteractType.START, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.START, MousePosition);
 
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanUpdate: (details) {
         updateStage(details);
-        if (selectMode) drawy.selectMode(InteractType.MOVE, MousePosition);
-        if (penMode) drawy.penMode(InteractType.MOVE, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.MOVE, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.MOVE, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanEnd: (details) {
-        if (selectMode) drawy.selectMode(InteractType.END, MousePosition);
-        if (penMode) drawy.penMode(InteractType.END, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.END, MousePosition);
+        if (penMode) drawy.penMode(DrawyInteract.END, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
 
       onPanCancel: () {
-        if (selectMode) drawy.selectMode(InteractType.END, MousePosition);
+        if (selectMode) drawy.selectMode(DrawyInteract.END, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       // onPanUpdate: (details) {
