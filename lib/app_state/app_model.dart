@@ -6,7 +6,8 @@ class AppModel {
   const AppModel({
     this.name,
     this.age = 0,
-    this.activeTool = ActiveTool.selectTool,
+    this.activeTool = ActiveTool
+        .penTool, // starting with pen tool just to make debugging faster
   });
 
   final String? name;

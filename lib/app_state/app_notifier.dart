@@ -8,12 +8,7 @@ class AppNotifier extends Notifier<AppModel> {
   @override
   AppModel build() {
     // initial default data for app
-    return const AppModel(
-      name: 'Default Name',
-      age: 0,
-      activeTool: ActiveTool
-          .penTool, // starting with pen tool just to make debugging faster
-    );
+    return const AppModel(name: 'Default Name', age: 0);
   }
 
   void updateName(String name) {
