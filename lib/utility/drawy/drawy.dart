@@ -105,6 +105,7 @@ class Drawy {
       var offsetPosition = (mousePosition - position);
       activePoint.cubicControlPointA = (position) - offsetPosition;
       activePoint.cubicControlPointB = (position) + offsetPosition;
+      activePoint.nextPointCubicPointStart = (position) + offsetPosition;
       // reconverPointsToPath path based off new data
       penPath.converPointsToPath();
     }
@@ -170,12 +171,21 @@ class Drawy {
                   currentSelectedPoint.position + delta;
               currentSelectedPoint.cubicControlPointA =
                   currentSelectedPoint.position - delta;
+
+              currentSelectedPoint.nextPointCubicPointStart =
+                  currentSelectedPoint.position + delta;
+              print("A selected");
             }
             if (activeBezier == DrawyBezierSelected.B) {
               currentSelectedPoint.cubicControlPointB =
                   currentSelectedPoint.position - delta;
               currentSelectedPoint.cubicControlPointA =
                   currentSelectedPoint.position + delta;
+
+              currentSelectedPoint.nextPointCubicPointStart =
+                  currentSelectedPoint.position - delta;
+              print("B selected");
+
             }
             activePath?.converPointsToPath();
             return;
@@ -192,6 +202,7 @@ class Drawy {
             position: mousePosition,
             cubicControlPointA: newBezierA,
             cubicControlPointB: newBezierB,
+            nextPointCubicPointStart: newBezierB,
           );
 
           activePath?.converPointsToPath();
@@ -310,11 +321,13 @@ class DrawyPoint {
   // control points are for MATH for controls
   Vector2? cubicControlPointA;
   Vector2? cubicControlPointB;
+  Vector2? nextPointCubicPointStart;
 
   DrawyPoint({
     required this.position,
     this.cubicControlPointA,
     this.cubicControlPointB,
+    this.nextPointCubicPointStart,
   });
 }
 
@@ -340,6 +353,10 @@ class DrawyPath {
     path.reset();
     for (var i = 0; i < ptCount; i++) {
       var endPosition = pathPoints[i].position;
+      DrawyPoint? lastPoint;
+      if (i > 0) {
+        lastPoint = pathPoints[i - 1];
+      }
       var cubicControlPointA = pathPoints[i].cubicControlPointA;
       var cubicControlPointB = pathPoints[i].cubicControlPointB;
 
@@ -349,10 +366,19 @@ class DrawyPath {
       } else {
         // second point add points
         if (cubicControlPointA != null && cubicControlPointB != null) {
+          Vector2? preExistingCubicPoint;
+          // attempt to use the last point's bezier as a guide
+          if (lastPoint != null && lastPoint.nextPointCubicPointStart != null) {
+            preExistingCubicPoint = lastPoint.nextPointCubicPointStart;
+          }
           // curve into position if we have a curve point
           path.cubicTo(
-            cubicControlPointA.x,
-            cubicControlPointA.y,
+            preExistingCubicPoint != null
+                ? preExistingCubicPoint.x
+                : cubicControlPointA.x,
+            preExistingCubicPoint != null
+                ? preExistingCubicPoint.y
+                : cubicControlPointA.y,
 
             cubicControlPointA.x,
             cubicControlPointA.y,
