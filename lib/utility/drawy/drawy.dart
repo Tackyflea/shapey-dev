@@ -12,7 +12,11 @@ double MAX_DISTANCE_TO_POINT = 450;
 // min distance in pen mode, after which we declare that we're in drag mode
 double PEN_MINIMUM_DRAG_DISTANCE = 50;
 
+// To indicate what side of the bezier is currently selected
 enum DrawyBezierSelected { none, A, B }
+
+// to indicate what kind of guide to draw
+enum DrawyGuideType { fullSquare, square, circle }
 
 class Drawy {
   late Canvas canvasToDrawOn;
@@ -30,15 +34,6 @@ class Drawy {
   DrawyBezierSelected activeBezier =
       DrawyBezierSelected.none; // for tweaking paths
   int activePathSelectedIndex = -1;
-
-  var GUIDE_PEN_PAINT_FILL = Paint()
-    ..color = Color.fromRGBO(22, 201, 255, 0.196)
-    ..style = PaintingStyle.fill;
-
-  var GUIDE_PEN_PAINT_STROKE = Paint()
-    ..color = Color.fromARGB(255, 28, 134, 236)
-    ..strokeWidth = 1
-    ..style = PaintingStyle.stroke;
 
   var PEN_DEFAULT_STROKE = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
@@ -103,8 +98,7 @@ class Drawy {
       // Since we're now in drag mode, we're adding a control point to wherever
       // the mouse is at now
       var offsetPosition = (mousePosition - position);
-      activePoint.cubicControlPointA = (position) - offsetPosition;
-      activePoint.cubicControlPointB = (position) + offsetPosition;
+      activePoint.thisPointCubicPointEnd = (position) - offsetPosition;
       activePoint.nextPointCubicPointStart = (position) + offsetPosition;
       // reconverPointsToPath path based off new data
       penPath.converPointsToPath();
@@ -124,8 +118,8 @@ class Drawy {
       var tempPoint = activePath?.pathPoints[activePathSelectedIndex];
       if (tempPoint != null) {
         // check if youre trying to edit hte beziers, if they exist
-        Vector2? cubicPtA = tempPoint.cubicControlPointA,
-            cubicPtB = tempPoint.cubicControlPointB;
+        Vector2? cubicPtA = tempPoint.thisPointCubicPointEnd,
+            cubicPtB = tempPoint.nextPointCubicPointStart;
 
         if (cubicPtA != null &&
             cubicPtA.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT) {
@@ -165,43 +159,35 @@ class Drawy {
           if (activeBezier != DrawyBezierSelected.none) {
             // These are currently mirrors of themselves
             // TODO: Figure out how to split beziers properly so you can individually control them
-            Vector2? ctrlA = currentSelectedPoint.cubicControlPointA;
+            Vector2? ctrlA = currentSelectedPoint.thisPointCubicPointEnd;
             if (activeBezier == DrawyBezierSelected.A && ctrlA != null) {
-              currentSelectedPoint.cubicControlPointB =
-                  currentSelectedPoint.position + delta;
-              currentSelectedPoint.cubicControlPointA =
+              currentSelectedPoint.thisPointCubicPointEnd =
                   currentSelectedPoint.position - delta;
 
               currentSelectedPoint.nextPointCubicPointStart =
                   currentSelectedPoint.position + delta;
-              print("A selected");
             }
             if (activeBezier == DrawyBezierSelected.B) {
-              currentSelectedPoint.cubicControlPointB =
-                  currentSelectedPoint.position - delta;
-              currentSelectedPoint.cubicControlPointA =
+              currentSelectedPoint.thisPointCubicPointEnd =
                   currentSelectedPoint.position + delta;
 
               currentSelectedPoint.nextPointCubicPointStart =
                   currentSelectedPoint.position - delta;
-              print("B selected");
-
             }
             activePath?.converPointsToPath();
             return;
           }
 
           // POINT move mode
-          Vector2? controlA = currentSelectedPoint.cubicControlPointA,
-              controlB = currentSelectedPoint.cubicControlPointB;
+          Vector2? controlA = currentSelectedPoint.thisPointCubicPointEnd,
+              controlB = currentSelectedPoint.nextPointCubicPointStart;
 
           Vector2? newBezierA = controlA != null ? controlA - delta : null;
           Vector2? newBezierB = controlB != null ? controlB - delta : null;
 
           tempPoints?[activePathSelectedIndex] = DrawyPoint(
             position: mousePosition,
-            cubicControlPointA: newBezierA,
-            cubicControlPointB: newBezierB,
+            thisPointCubicPointEnd: newBezierA,
             nextPointCubicPointStart: newBezierB,
           );
 
@@ -221,29 +207,35 @@ class Drawy {
   void update() {
     // DRAW
 
+    final activePathUpdate = activePath; // Flutter specific ,for nullchecking
+    bool activePathExists = activePath != null && activePathSelectedIndex != -1;
     // draw all paths
     // Todo , swap this with a static list
     for (var path in drawPaths) {
       path.draw(canvasToDrawOn, PEN_DEFAULT_STROKE);
-    }
 
-    // GUIDE LAYERS
-
-    // pen paths
-    final pathNullChecked = activePath;
-    // check we both have a path and the index is IN the path
-    if (pathNullChecked != null && activePathSelectedIndex != -1) {
-      DrawyPoint selectedPoint =
-          pathNullChecked.pathPoints[activePathSelectedIndex];
-
-      // draw guides
-      drawGuidePoint(selectedPoint.position);
-
-      if (selectedPoint.cubicControlPointA != null) {
-        drawGuidePoint(selectedPoint.cubicControlPointA);
+      // don't draw anything else if path isn't selected
+      if (activePath == null || path != activePath) {
+        continue;
       }
-      if (selectedPoint.cubicControlPointB != null) {
-        drawGuidePoint(selectedPoint.cubicControlPointB);
+      // GUIDE LAYERS
+      // draw guides for all points in ACTIVE path, and a special guide for selected point
+      DrawyPoint? activePoint = activePath?.pathPoints[activePathSelectedIndex];
+      for (DrawyPoint pt in path.pathPoints) {
+        bool isActivePoint = activePoint != null && activePoint == pt;
+
+        if (isActivePoint) {
+          drawGuidePoint(DrawyGuideType.fullSquare, pt.position);
+          if (pt.thisPointCubicPointEnd != null) {
+            drawGuidePoint(DrawyGuideType.circle, pt.thisPointCubicPointEnd);
+          }
+          if (pt.nextPointCubicPointStart != null) {
+            drawGuidePoint(DrawyGuideType.circle, pt.nextPointCubicPointStart);
+          }
+        } else {
+          // normal guides
+          drawGuidePoint(DrawyGuideType.square, pt.position);
+        }
       }
     }
   }
@@ -292,26 +284,45 @@ class Drawy {
     return (index, distanceToCheckAgainst);
   }
 
-  void drawGuidePoint(Vector2? position) {
+  // GUIDES
+  Paint guidePaintSemiFull = Paint()
+    ..color = Color.fromRGBO(22, 201, 255, 0.196)
+    ..style = PaintingStyle.fill;
+  Paint guidePaintFull = Paint()
+    ..color = Color.fromRGBO(22, 201, 255, 1)
+    ..style = PaintingStyle.fill;
+
+  Paint guidePaintStroke = Paint()
+    ..color = Color.fromARGB(255, 28, 134, 236)
+    ..strokeWidth = 1
+    ..style = PaintingStyle.stroke;
+
+  void drawGuidePoint(DrawyGuideType typeToDraw, Vector2? position) {
     if (position == null) {
       return;
     }
-    canvasToDrawOn.drawRect(
-      Rect.fromCenter(
-        center: Offset(position.x, position.y),
-        width: 10,
-        height: 10,
-      ),
-      GUIDE_PEN_PAINT_FILL,
-    );
-    canvasToDrawOn.drawRect(
-      Rect.fromCenter(
-        center: Offset(position.x, position.y),
-        width: 10,
-        height: 10,
-      ),
-      GUIDE_PEN_PAINT_STROKE,
-    );
+    double size = 9;
+    Offset pos = Offset(position.x, position.y);
+
+    if (typeToDraw == DrawyGuideType.square) {
+      canvasToDrawOn.drawRect(
+        Rect.fromCenter(center: pos, width: size, height: size),
+        guidePaintSemiFull,
+      );
+
+      canvasToDrawOn.drawRect(
+        Rect.fromCenter(center: pos, width: size, height: size),
+        guidePaintStroke,
+      );
+    } else if (typeToDraw == DrawyGuideType.fullSquare) {
+      canvasToDrawOn.drawRect(
+        Rect.fromCenter(center: pos, width: size, height: size),
+        guidePaintFull,
+      );
+    } else if (typeToDraw == DrawyGuideType.circle) {
+      canvasToDrawOn.drawCircle(pos, size / 2, guidePaintSemiFull);
+      canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
+    }
   }
 }
 
@@ -319,14 +330,15 @@ class Drawy {
 class DrawyPoint {
   Vector2 position;
   // control points are for MATH for controls
-  Vector2? cubicControlPointA;
-  Vector2? cubicControlPointB;
+
+  // Default End Cubic , we use the current path
+  Vector2? thisPointCubicPointEnd;
+  // the default start Cublic , we use the last point's end cubic
   Vector2? nextPointCubicPointStart;
 
   DrawyPoint({
     required this.position,
-    this.cubicControlPointA,
-    this.cubicControlPointB,
+    this.thisPointCubicPointEnd,
     this.nextPointCubicPointStart,
   });
 }
@@ -357,15 +369,14 @@ class DrawyPath {
       if (i > 0) {
         lastPoint = pathPoints[i - 1];
       }
-      var cubicControlPointA = pathPoints[i].cubicControlPointA;
-      var cubicControlPointB = pathPoints[i].cubicControlPointB;
+      var thisPointCubicPointEnd = pathPoints[i].thisPointCubicPointEnd;
 
       if (i == 0) {
         // first point just tap
         path.moveTo(endPosition.x, endPosition.y);
       } else {
         // second point add points
-        if (cubicControlPointA != null && cubicControlPointB != null) {
+        if (thisPointCubicPointEnd != null) {
           Vector2? preExistingCubicPoint;
           // attempt to use the last point's bezier as a guide
           if (lastPoint != null && lastPoint.nextPointCubicPointStart != null) {
@@ -375,13 +386,13 @@ class DrawyPath {
           path.cubicTo(
             preExistingCubicPoint != null
                 ? preExistingCubicPoint.x
-                : cubicControlPointA.x,
+                : thisPointCubicPointEnd.x,
             preExistingCubicPoint != null
                 ? preExistingCubicPoint.y
-                : cubicControlPointA.y,
+                : thisPointCubicPointEnd.y,
 
-            cubicControlPointA.x,
-            cubicControlPointA.y,
+            thisPointCubicPointEnd.x,
+            thisPointCubicPointEnd.y,
             endPosition.x,
             endPosition.y,
           );
