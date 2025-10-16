@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/ShapeCanvas.dart';
-import 'package:shapey/utility/RightClickIVWidget.dart';
+import 'package:shapey/utility/TouchViewer.dart';
 
 class StageWidget extends ConsumerStatefulWidget {
   const StageWidget({super.key});
@@ -17,7 +17,7 @@ class _StageState extends ConsumerState<StageWidget> {
   @override
   Widget build(BuildContext context) {
     // ref.read(scoreChangeNotifProvider.notifier).set(points);
-    return RightClickViewer(
+    return TouchViewer(
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:keymap/keymap.dart';
 import 'package:shapey/app_state/app_notifier.dart';
 import 'package:shapey/app_state/drawyCommands.dart';
 import 'package:shapey/enums/e_active_tool.dart';
@@ -24,8 +25,6 @@ class ShapeCanvas extends ConsumerStatefulWidget {
 
 class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   final ValueNotifier<bool> _repaintNotifier = ValueNotifier(false);
-  final _focusNode = FocusNode();
-
   final drawy = Drawy();
   late String stretchStarSvg;
   late String squareStarSvg;
@@ -55,7 +54,6 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
   @override
   void dispose() {
-    _focusNode.dispose();
     _repaintNotifier.dispose();
     super.dispose();
   }
@@ -117,7 +115,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
           );
         }
         if (penMode) {
-          print("EXEC CANCEL");
+          // print("EXEC CANCEL");
           appData.appCommandHistory.executeCommand(
             DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
           );
@@ -126,28 +124,17 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       },
       child: sizedPaintWidget,
     );
-    var keyboardListener = KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: (KeyEvent event) {
-        try {
-          if (event is KeyDownEvent) {
-            if (event.logicalKey == LogicalKeyboardKey.keyZ) {
-              if (HardwareKeyboard.instance.isControlPressed &&
-                  HardwareKeyboard.instance.isShiftPressed) {
-                print("redo button");
-              } else if (HardwareKeyboard.instance.isControlPressed) {
-                appData.appCommandHistory.undo();
-                _repaintNotifier.value = !_repaintNotifier.value;
-              }
-            }
-          }
-        } catch (_) {}
-      },
+    return KeyboardWidget(
+      // Undo / Redo
+      bindings: [
+        KeyAction(LogicalKeyboardKey.keyZ, 'Undo', () {
+          appData.appCommandHistory.undo();
+
+          _repaintNotifier.value = !_repaintNotifier.value;
+        }, isControlPressed: true),
+      ],
       child: gestureDetectorWidget,
     );
-
-    return keyboardListener;
   }
 }
 

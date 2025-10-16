@@ -1,17 +1,21 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:keymap/keymap.dart';
+import 'package:shapey/app_state/app_notifier.dart';
 
 /// Interactive viewer meant for right click only panning
 /// [child] The child to pan / drag
 /// [minScale] min zoom level
 /// [maxScale] max zoom level
 /// [scaleFactor] how show to zoom, higher = slower
-class RightClickViewer extends StatefulWidget {
+class TouchViewer extends StatefulWidget {
   final Widget child;
   final double minScale;
   final double maxScale;
   final double scaleFactor;
-  const RightClickViewer({
+  const TouchViewer({
     super.key,
     required this.child,
     this.minScale = 0.01,
@@ -20,17 +24,17 @@ class RightClickViewer extends StatefulWidget {
   });
 
   @override
-  State<RightClickViewer> createState() => _RightClickViewerState();
+  State<TouchViewer> createState() => _TouchViewerSTate();
 }
 
-class _RightClickViewerState extends State<RightClickViewer> {
+class _TouchViewerSTate extends State<TouchViewer> {
   // For tracking position updates
   final _controller = TransformationController();
   Offset? _lastPosition;
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
+    Listener touchListener = Listener(
       // panning only allowed for secondary motion
       onPointerDown: (e) => e.buttons == kSecondaryMouseButton
           ? _lastPosition = e.localPosition
@@ -55,6 +59,8 @@ class _RightClickViewerState extends State<RightClickViewer> {
         child: widget.child,
       ),
     );
+
+    return touchListener;
   }
 
   @override

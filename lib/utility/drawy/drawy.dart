@@ -129,7 +129,8 @@ class Drawy {
   }
 
   void undoPen() {
-    print("UNDO PEN");
+    print("UNDO:_________");
+    print("Current Paths count ${drawPathHistory.length}");
     if (drawPathHistory.length >= 2) {
       // Remove current state
       drawPathHistory.removeLast();
@@ -141,7 +142,6 @@ class Drawy {
           .map((path) => path.copy()..convertPointsToPath())
           .toList();
 
-      print("After undo - drawPaths length: ${drawPaths.length}");
       var lastPathNumber = activePathHistory.last;
       // assuming there was an active path, and that its part of the paths, revert to it
       if (lastPathNumber != null &&
@@ -151,22 +151,23 @@ class Drawy {
         activePoint = activePointHistory.last;
       }
     }
+    print("New Paths count ${drawPathHistory.length}");
   }
 
   void undoSelect() {
-    if (activePathHistory.length >= 2) {
-      activePathHistory.removeLast();
-      activePointHistory.removeLast();
-      var lastPathNumber = activePathHistory.last;
-      if (lastPathNumber != null &&
-          lastPathNumber >= 0 &&
-          lastPathNumber < drawPaths.length) {
-        activePath = drawPaths[lastPathNumber];
-        activePoint = activePointHistory.last;
-      }
-    }
+    // TEMP Disabling
+    // if (activePathHistory.length >= 2) {
+    //   activePathHistory.removeLast();
+    //   activePointHistory.removeLast();
+    //   var lastPathNumber = activePathHistory.last;
+    //   if (lastPathNumber != null &&
+    //       lastPathNumber >= 0 &&
+    //       lastPathNumber < drawPaths.length) {
+    //     activePath = drawPaths[lastPathNumber];
+    //     activePoint = activePointHistory.last;
+    //   }
+    // }
   }
-
   // try to fetch a nearby pen point
   void selectMode(DrawyInteract interact, Vector2 mousePosition) {
     // Start Drag
@@ -236,14 +237,14 @@ class Drawy {
       // activePath = null;
       // activePoint = -1;
       activeBezier = DrawyBezierSelected.none;
-
-      DrawyPath? tempPath = activePath;
-      if (tempPath != null) {
-        int activePathIndex = drawPaths.indexOf(tempPath);
-        activePathHistory.add(activePathIndex);
-        // save active point
-        activePointHistory.add(activePoint);
-      }
+      // TEMP Disabling select mode in history
+      // DrawyPath? tempPath = activePath;
+      // if (tempPath != null) {
+      //   int activePathIndex = drawPaths.indexOf(tempPath);
+      //   activePathHistory.add(activePathIndex);
+      //   // save active point
+      //   activePointHistory.add(activePoint);
+      // }
     }
   }
 
@@ -461,13 +462,12 @@ class DrawyPoint {
   }
 
   DrawyPoint copy() {
-    return DrawyPoint(position: Vector2.copy(position))
-      ..thisPointCubicPointEnd = thisPointCubicPointEnd != null
-          ? Vector2.copy(thisPointCubicPointEnd!)
-          : null
-      ..nextPointCubicPointStart = nextPointCubicPointStart != null
-          ? Vector2.copy(nextPointCubicPointStart!)
-          : null;
+    var clonePoint = DrawyPoint(position: Vector2.copy(position));
+    clonePoint.updateCurves(
+      nextPointCubicPointStart?.clone(),
+      thisPointCubicPointEnd?.clone(),
+    );
+    return clonePoint;
   }
 }
 
