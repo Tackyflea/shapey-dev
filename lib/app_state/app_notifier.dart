@@ -1,5 +1,6 @@
 // Notifier to manage a AppModel
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 
 import 'app_model.dart';
@@ -8,7 +9,11 @@ class AppNotifier extends Notifier<AppModel> {
   @override
   AppModel build() {
     // initial default data for app
-    return const AppModel(name: 'Default Name', age: 0);
+    return AppModel(
+      name: 'Default Name',
+      age: 0,
+      appCommandHistory: AppCommandInvoker(),
+    );
   }
 
   void updateName(String name) {

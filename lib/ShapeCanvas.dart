@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_notifier.dart';
+import 'package:shapey/app_state/drawyCommands.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
+// Todo: Implement this maybe https://github.com/Deatsilence/flutter-design-patterns?tab=readme-ov-file#momento
+// For undo history
 // SHAPE CANVAS
 class ShapeCanvas extends ConsumerStatefulWidget {
   const ShapeCanvas({super.key, this.width = 100, this.height = 100});
@@ -20,6 +24,7 @@ class ShapeCanvas extends ConsumerStatefulWidget {
 
 class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   final ValueNotifier<bool> _repaintNotifier = ValueNotifier(false);
+  final _focusNode = FocusNode();
 
   final drawy = Drawy();
   late String stretchStarSvg;
@@ -50,6 +55,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _repaintNotifier.dispose();
     super.dispose();
   }
@@ -66,7 +72,14 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     var penMode = appData.activeTool == ActiveTool.penTool;
     var selectMode = appData.activeTool == ActiveTool.selectTool;
 
-    return GestureDetector(
+    //RESIZED SHAPE CANVAS
+    var sizedPaintWidget = CustomPaint(
+      size: Size(widget.width, widget.height),
+      painter: _ShapeCanvasPainter(_repaintNotifier, drawy, pictureInfo),
+    );
+
+    // TAP GESTURES
+    var gestureDetectorWidget = GestureDetector(
       onPanDown: (details) {
         updateStage(details);
 
@@ -83,24 +96,58 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanEnd: (details) {
-        if (selectMode) drawy.selectMode(DrawyInteract.end, MousePosition);
-        if (penMode) drawy.penMode(DrawyInteract.end, MousePosition);
+        if (selectMode) {
+          appData.appCommandHistory.executeCommand(
+            DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
+          );
+        }
+        if (penMode) {
+          print("EXEC END");
+          appData.appCommandHistory.executeCommand(
+            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
+          );
+        }
         _repaintNotifier.value = !_repaintNotifier.value;
       },
 
       onPanCancel: () {
-        if (selectMode) drawy.selectMode(DrawyInteract.end, MousePosition);
-        _repaintNotifier.value = !_repaintNotifier.value;
+        if (selectMode) {
+          appData.appCommandHistory.executeCommand(
+            DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
+          );
+        }
+        if (penMode) {
+          print("EXEC CANCEL");
+          appData.appCommandHistory.executeCommand(
+            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
+          );
+        }
+        // _repaintNotifier.value = !_repaintNotifier.value;
       },
-      // onPanUpdate: (details) {
-      //   updateStage(details);
-      //   _repaintNotifier.value = !_repaintNotifier.value;
-      // },
-      child: CustomPaint(
-        size: Size(widget.width, widget.height),
-        painter: _ShapeCanvasPainter(_repaintNotifier, drawy, pictureInfo),
-      ),
+      child: sizedPaintWidget,
     );
+    var keyboardListener = KeyboardListener(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: (KeyEvent event) {
+        try {
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.keyZ) {
+              if (HardwareKeyboard.instance.isControlPressed &&
+                  HardwareKeyboard.instance.isShiftPressed) {
+                print("redo button");
+              } else if (HardwareKeyboard.instance.isControlPressed) {
+                appData.appCommandHistory.undo();
+                _repaintNotifier.value = !_repaintNotifier.value;
+              }
+            }
+          }
+        } catch (_) {}
+      },
+      child: gestureDetectorWidget,
+    );
+
+    return keyboardListener;
   }
 }
 

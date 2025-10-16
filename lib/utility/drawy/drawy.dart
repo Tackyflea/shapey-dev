@@ -31,11 +31,15 @@ class Drawy {
   // PEN SETTINGS
   // Pen is a custom live path, that we can swap the definition of
   // depending on what you want to add points to
-  DrawyPath penPath = DrawyPath(pathPoints: []);
-  DrawyPath? activePath;
+  DrawyPath? activePath = DrawyPath(pathPoints: []);
+
   DrawyBezierSelected activeBezier =
       DrawyBezierSelected.none; // for tweaking paths
-  int activePathSelectedIndex = -1;
+  int activePoint = -1;
+
+  List<List<DrawyPath>> drawPathHistory = [];
+  List<int?> activePathHistory = [];
+  List<int> activePointHistory = [];
 
   var PEN_DEFAULT_STROKE = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
@@ -47,7 +51,9 @@ class Drawy {
 
   void setup() {
     // add dynamic pen path to the general path list
-    drawPaths.add(penPath);
+    if (activePath != null) {
+      drawPaths.add(activePath!);
+    }
   }
 
   void line(Offset p1, Offset p2) =>
@@ -61,7 +67,7 @@ class Drawy {
       drawyPointList.add(DrawyPoint(position: pos));
     }
     var newPath = DrawyPath(pathPoints: drawyPointList);
-    newPath.converPointsToPath();
+    newPath.convertPointsToPath();
     drawPaths.add(newPath);
   }
 
@@ -70,46 +76,94 @@ class Drawy {
     // START
     if (interact == DrawyInteract.start) {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
-      penPath.addPoint(newPoint);
-      // reconverPointsToPath path based off new data
-      penPath.converPointsToPath();
+      activePath?.addPoint(newPoint);
+      // reconvertPointsToPath path based off new data
+      activePath?.convertPointsToPath();
 
-      var tempPath = penPath;
+      var tempPath = activePath;
+      if (tempPath == null) {
+        return;
+      }
       // This might be kind of overkill, since atm we already KNOW it's the path.lenght - 1
       // but maybe we won't in the future
-      activePathSelectedIndex = tempPath.getPointAsVectors().indexOf(
-        newPoint.position,
-      );
+      activePoint = tempPath.getPointAsVectors().indexOf(newPoint.position);
 
       activePath = tempPath;
     }
     if (interact == DrawyInteract.move && activePath != null) {
-      var activePoint = activePath?.pathPoints[activePathSelectedIndex];
+      var getActivePoint = activePath?.pathPoints[activePoint];
       // grab how far we moved
-      var position = activePoint?.position;
+      var position = getActivePoint?.position;
       var distanceMoved = position?.distanceToSquared(mousePosition);
       // early return if you havent moved enough, or active point gets lost
-      if (distanceMoved == null || activePoint == null || position == null)
+      if (distanceMoved == null || getActivePoint == null || position == null)
         return;
       if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
       // (TODO: Find out if needed) early return if you're in the first point since theres nothing to curve
-      if (activePathSelectedIndex == 0) {
+      if (activePoint == 0) {
         return;
       }
 
       // Since we're now in drag mode, we're adding a control point to wherever
       // the mouse is at now
       var offsetPosition = (mousePosition - position);
-      activePoint.updateCurves(
+      getActivePoint.updateCurves(
         position + offsetPosition,
         position - offsetPosition,
       );
-      // reconverPointsToPath path based off new data
-      penPath.converPointsToPath();
+      // reconvertPointsToPath path based off new data
+      activePath?.convertPointsToPath();
     }
 
-    if (interact == DrawyInteract.end) {
-      // print('end');
+    var tempPath = activePath;
+    // clone history at end of interation
+    if (interact == DrawyInteract.end && tempPath != null) {
+      // save paths
+      drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
+      // save active path
+      int activePathIndex = drawPaths.indexOf(tempPath);
+      activePathHistory.add(activePathIndex);
+      // save active point
+      activePointHistory.add(activePoint);
+    }
+  }
+
+  void undoPen() {
+    print("UNDO PEN");
+    if (drawPathHistory.length >= 2) {
+      // Remove current state
+      drawPathHistory.removeLast();
+      activePathHistory.removeLast();
+      activePointHistory.removeLast();
+
+      // Get the last state
+      drawPaths = drawPathHistory.last
+          .map((path) => path.copy()..convertPointsToPath())
+          .toList();
+
+      print("After undo - drawPaths length: ${drawPaths.length}");
+      var lastPathNumber = activePathHistory.last;
+      // assuming there was an active path, and that its part of the paths, revert to it
+      if (lastPathNumber != null &&
+          lastPathNumber >= 0 &&
+          lastPathNumber < drawPaths.length) {
+        activePath = drawPaths[lastPathNumber];
+        activePoint = activePointHistory.last;
+      }
+    }
+  }
+
+  void undoSelect() {
+    if (activePathHistory.length >= 2) {
+      activePathHistory.removeLast();
+      activePointHistory.removeLast();
+      var lastPathNumber = activePathHistory.last;
+      if (lastPathNumber != null &&
+          lastPathNumber >= 0 &&
+          lastPathNumber < drawPaths.length) {
+        activePath = drawPaths[lastPathNumber];
+        activePoint = activePointHistory.last;
+      }
     }
   }
 
@@ -119,7 +173,7 @@ class Drawy {
     if (interact == DrawyInteract.start) {
       // BEZIER ACTIVE CHECK
       if (activePointIndexValid()) {
-        var tempPoint = activePath?.pathPoints[activePathSelectedIndex];
+        var tempPoint = activePath?.pathPoints[activePoint];
         if (tempPoint != null) {
           // check if youre trying to edit hte beziers, if they exist
           Vector2? cubicPtA = tempPoint.thisPointCubicPointEnd,
@@ -144,11 +198,11 @@ class Drawy {
       var (nearPath, nearIndex) = _getClosestPointOnAPath(mousePosition);
       if (nearPath != null) {
         activePath = nearPath;
-        activePathSelectedIndex = nearIndex;
+        activePoint = nearIndex;
       } else {
         // reset if we havent found anything
         activePath = null;
-        activePathSelectedIndex = -1;
+        activePoint = -1;
       }
 
       // couldn't find a point, so lets try to see if it's near a path
@@ -180,8 +234,16 @@ class Drawy {
     // End Drag
     if (interact == DrawyInteract.end) {
       // activePath = null;
-      // activePathSelectedIndex = -1;
+      // activePoint = -1;
       activeBezier = DrawyBezierSelected.none;
+
+      DrawyPath? tempPath = activePath;
+      if (tempPath != null) {
+        int activePathIndex = drawPaths.indexOf(tempPath);
+        activePathHistory.add(activePathIndex);
+        // save active point
+        activePointHistory.add(activePoint);
+      }
     }
   }
 
@@ -210,13 +272,13 @@ class Drawy {
       }
       // GUIDE LAYERS
       // draw guides for all points in ACTIVE path, and a special guide for selected point
-      DrawyPoint? activePoint;
+      DrawyPoint? getActivePoint;
       if (activePointIndexValid()) {
         // only allow checking if theres an active index
-        activePoint = activePath?.pathPoints[activePathSelectedIndex];
+        getActivePoint = activePath?.pathPoints[activePoint];
       }
       for (DrawyPoint pt in path.pathPoints) {
-        bool isActivePoint = activePoint != null && activePoint == pt;
+        bool isActivePoint = getActivePoint != null && getActivePoint == pt;
 
         if (isActivePoint) {
           drawGuidePoint(DrawyGuideType.fullSquare, pt.position);
@@ -240,7 +302,7 @@ class Drawy {
 
     if (youHaveAPathSelected) {
       final List<DrawyPoint>? tempPoints = activePath?.pathPoints;
-      final curSelectedPoint = tempPoints?[activePathSelectedIndex];
+      final curSelectedPoint = tempPoints?[activePoint];
 
       if (curSelectedPoint != null) {
         final delta = curSelectedPoint.position - mousePosition;
@@ -261,7 +323,7 @@ class Drawy {
               curSelectedPoint.position + delta,
             );
           }
-          activePath?.converPointsToPath();
+          activePath?.convertPointsToPath();
           return;
         }
 
@@ -272,15 +334,10 @@ class Drawy {
         Vector2? newBezierA = controlA != null ? controlA - delta : null;
         Vector2? newBezierB = controlB != null ? controlB - delta : null;
 
-        tempPoints?[activePathSelectedIndex] = DrawyPoint(
-          position: mousePosition,
-        );
-        tempPoints?[activePathSelectedIndex].updateCurves(
-          newBezierB,
-          newBezierA,
-        );
+        tempPoints?[activePoint] = DrawyPoint(position: mousePosition);
+        tempPoints?[activePoint].updateCurves(newBezierB, newBezierA);
 
-        activePath?.converPointsToPath();
+        activePath?.convertPointsToPath();
       }
     }
   }
@@ -332,7 +389,7 @@ class Drawy {
 
   // the current point selected is one that could exist in a path
   bool activePointIndexValid() {
-    return activePathSelectedIndex != -1;
+    return activePoint != -1;
   }
 
   // GUIDES
@@ -402,6 +459,16 @@ class DrawyPoint {
     nextPointCubicPointStart = newCubicPointStart;
     thisPointCubicPointEnd = newPointCubicPointEnd;
   }
+
+  DrawyPoint copy() {
+    return DrawyPoint(position: Vector2.copy(position))
+      ..thisPointCubicPointEnd = thisPointCubicPointEnd != null
+          ? Vector2.copy(thisPointCubicPointEnd!)
+          : null
+      ..nextPointCubicPointStart = nextPointCubicPointStart != null
+          ? Vector2.copy(nextPointCubicPointStart!)
+          : null;
+  }
 }
 
 // Generic Path wrapper, allows keeping info in a clean point list instead of relying on
@@ -421,7 +488,13 @@ class DrawyPath {
     pathPoints.add(newPoint);
   }
 
-  void converPointsToPath() {
+  DrawyPath copy() {
+    return DrawyPath(
+      pathPoints: pathPoints.map((point) => point.copy()).toList(),
+    );
+  }
+
+  void convertPointsToPath() {
     var ptCount = pathPoints.length;
     path.reset();
     for (var i = 0; i < ptCount; i++) {
