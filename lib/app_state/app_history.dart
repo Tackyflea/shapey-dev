@@ -22,8 +22,11 @@ class AppCommandInvoker {
     if (_commands.isNotEmpty) {
       // Remove the last command and undo it
       final lastCommand = _commands.removeLast();
+      print("AppCommandInvoker: ${lastCommand.getTitle()}");
       lastCommand.undo();
       _undoneCommands.add(lastCommand); // Store it for redo
+    } else {
+      print("AppCommandInvoker: Command List Empty");
     }
   }
 

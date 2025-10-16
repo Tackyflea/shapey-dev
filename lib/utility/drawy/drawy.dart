@@ -12,7 +12,7 @@ double MAX_DISTANCE_TO_POINT = 450;
 // distance to check for to a near path
 double MAX_DISTANCE_TO_PATH = 30;
 // min distance in pen mode, after which we declare that we're in drag mode
-double PEN_MINIMUM_DRAG_DISTANCE = 50;
+double PEN_MINIMUM_DRAG_DISTANCE = 10;
 
 // To indicate what side of the bezier is currently selected
 enum DrawyBezierSelected { none, A, B }
@@ -31,7 +31,7 @@ class Drawy {
   // PEN SETTINGS
   // Pen is a custom live path, that we can swap the definition of
   // depending on what you want to add points to
-  DrawyPath? activePath = DrawyPath(pathPoints: []);
+  DrawyPath? activePath;
 
   DrawyBezierSelected activeBezier =
       DrawyBezierSelected.none; // for tweaking paths
@@ -47,13 +47,6 @@ class Drawy {
     ..style = PaintingStyle.stroke;
   void setCanvas(Canvas newCtx) {
     canvasToDrawOn = newCtx;
-  }
-
-  void setup() {
-    // add dynamic pen path to the general path list
-    if (activePath != null) {
-      drawPaths.add(activePath!);
-    }
   }
 
   void line(Offset p1, Offset p2) =>
@@ -73,46 +66,47 @@ class Drawy {
 
   // Draws a pan path along mouse position points
   void penMode(DrawyInteract interact, Vector2 mousePosition) {
+    var startPath = activePath;
     // START
     if (interact == DrawyInteract.start) {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
-      activePath?.addPoint(newPoint);
-      // reconvertPointsToPath path based off new data
-      activePath?.convertPointsToPath();
 
-      var tempPath = activePath;
-      if (tempPath == null) {
-        return;
+      // If path doesnt exist or the point's invalid OR you're inside of a path trying to add a point
+      // : Make a new path
+      if (startPath == null ||
+          activePoint == -1 ||
+          (activePoint > 0 && activePoint < startPath.pathPoints.length - 1)) {
+        print("-> Path -> Creating new path");
+        startPath = DrawyPath(pathPoints: []);
+        drawPaths.add(startPath);
+        activePath = startPath;
+        activePoint = 0;
       }
+      startPath.addPoint(newPoint, activePoint == 0);
+
+      // reconvertPointsToPath path based off new data
+      startPath.convertPointsToPath();
+
       // This might be kind of overkill, since atm we already KNOW it's the path.lenght - 1
       // but maybe we won't in the future
-      activePoint = tempPath.getPointAsVectors().indexOf(newPoint.position);
-
-      activePath = tempPath;
+      activePoint = startPath.getPointAsVectors().indexOf(newPoint.position);
     }
-    if (interact == DrawyInteract.move && activePath != null) {
-      var getActivePoint = activePath?.pathPoints[activePoint];
+    if (interact == DrawyInteract.move && startPath != null) {
+      var getActivePoint = startPath.pathPoints[activePoint];
       // grab how far we moved
-      var position = getActivePoint?.position;
-      var distanceMoved = position?.distanceToSquared(mousePosition);
+      var position = getActivePoint.position;
+      var distanceMoved = position.distanceToSquared(mousePosition);
       // early return if you havent moved enough, or active point gets lost
-      if (distanceMoved == null || getActivePoint == null || position == null)
-        return;
       if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
-      // (TODO: Find out if needed) early return if you're in the first point since theres nothing to curve
-      if (activePoint == 0) {
-        return;
-      }
-
       // Since we're now in drag mode, we're adding a control point to wherever
       // the mouse is at now
       var offsetPosition = (mousePosition - position);
       getActivePoint.updateCurves(
-        position + offsetPosition,
         position - offsetPosition,
+        position + offsetPosition,
       );
       // reconvertPointsToPath path based off new data
-      activePath?.convertPointsToPath();
+      startPath.convertPointsToPath();
     }
 
     var tempPath = activePath;
@@ -125,12 +119,12 @@ class Drawy {
       activePathHistory.add(activePathIndex);
       // save active point
       activePointHistory.add(activePoint);
+      print("-> Path: Total Paths: ${drawPaths.length}");
     }
   }
 
   void undoPen() {
-    print("UNDO:_________");
-    print("Current Paths count ${drawPathHistory.length}");
+    int beforeLen = drawPathHistory.length;
     if (drawPathHistory.length >= 2) {
       // Remove current state
       drawPathHistory.removeLast();
@@ -151,7 +145,7 @@ class Drawy {
         activePoint = activePointHistory.last;
       }
     }
-    print("New Paths count ${drawPathHistory.length}");
+    print("UNDO: New Paths ${beforeLen} -> ${drawPathHistory.length}");
   }
 
   void undoSelect() {
@@ -240,6 +234,9 @@ class Drawy {
       // TEMP Disabling select mode in history
       // DrawyPath? tempPath = activePath;
       // if (tempPath != null) {
+      //   // save paths
+      //   drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
+      //   // save active path
       //   int activePathIndex = drawPaths.indexOf(tempPath);
       //   activePathHistory.add(activePathIndex);
       //   // save active point
@@ -484,8 +481,12 @@ class DrawyPath {
     canvasToDrawOn.drawPath(path, paintToDrawWith);
   }
 
-  void addPoint(DrawyPoint newPoint) {
-    pathPoints.add(newPoint);
+  void addPoint(DrawyPoint newPoint, bool? atStart) {
+    if (atStart == true) {
+      pathPoints.insert(0, newPoint);
+    } else {
+      pathPoints.add(newPoint);
+    }
   }
 
   DrawyPath copy() {
