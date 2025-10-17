@@ -4,7 +4,7 @@ param(
     [string]$Version,
     
     [Parameter(Mandatory=$false)]
-    [string]$Repo = "Tackyflea/shapey-live", 
+    [string]$Repo = "Tackyflea/shapey", 
     
   [Parameter(Mandatory=$false)]
     [string]$BuildPath = "build/windows/x64/runner/Release",
