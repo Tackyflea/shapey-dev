@@ -9,4 +9,4 @@ ie
 .\build.ps1 -v 0.0.11
 ```
 which builds to here -> 
-https://github.com/Tackyflea/shapey-live/tags
+https://github.com/Tackyflea/shapey/tags
