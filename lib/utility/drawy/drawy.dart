@@ -24,6 +24,12 @@ class Drawy {
   late Canvas canvasToDrawOn;
   late ActiveTool activeTool = ActiveTool.selectTool;
 
+  // POST loading any initial data, we save the history
+  // so we have an initial state to revert to
+  void load() {
+    savePathStates();
+  }
+
   // Generic list of paths to draw for testing
   // TODO: Unify them with any other types of paths into a list of drawyObjects
   List<DrawyPath> drawPaths = [];
@@ -70,7 +76,6 @@ class Drawy {
     // START
     if (interact == DrawyInteract.start) {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
-
       // If path doesnt exist or the point's invalid OR you're inside of a path trying to add a point
       // : Make a new path
       if (startPath == null ||
@@ -109,24 +114,41 @@ class Drawy {
       startPath.convertPointsToPath();
     }
 
-    var tempPath = activePath;
     // clone history at end of interation
-    if (interact == DrawyInteract.end && tempPath != null) {
-      // save paths
-      drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
+    if (interact == DrawyInteract.end && startPath != null) {
+      savePathStates();
+    }
+  }
+
+  // Saves a history of the paths on stage
+  // a history of active paths, AND a history of active points
+  // TODO: Limit history count to save on memory
+  // TODO: Make active point as part of the draw path since they're connected (and you can have multiple)
+  // TODO: Make active path part of path, since you could have multiple paths selected
+  void savePathStates() {
+    // save paths
+    drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
+    var tempPath = activePath;
+    if (tempPath != null) {
       // save active path
       int activePathIndex = drawPaths.indexOf(tempPath);
       activePathHistory.add(activePathIndex);
       // save active point
       activePointHistory.add(activePoint);
-      print("-> Path: Total Paths: ${drawPaths.length}");
+    } else {
+      activePathHistory.add(null);
+      // save active point
+      activePointHistory.add(-1);
+      activePoint = -1;
+      print('RESET');
     }
   }
 
-  void undoPen() {
-    int beforeLen = drawPathHistory.length;
+  void undoPen() => revertPathStates();
+  void undoSelect() => revertPathStates();
+
+  void revertPathStates() {
     if (drawPathHistory.length >= 2) {
-      // Remove current state
       drawPathHistory.removeLast();
       activePathHistory.removeLast();
       activePointHistory.removeLast();
@@ -135,36 +157,24 @@ class Drawy {
       drawPaths = drawPathHistory.last
           .map((path) => path.copy()..convertPointsToPath())
           .toList();
-
       var lastPathNumber = activePathHistory.last;
-      // assuming there was an active path, and that its part of the paths, revert to it
-      if (lastPathNumber != null &&
-          lastPathNumber >= 0 &&
-          lastPathNumber < drawPaths.length) {
+
+      if (lastPathNumber != null) {
+        // revert back to last path
         activePath = drawPaths[lastPathNumber];
         activePoint = activePointHistory.last;
+      } else {
+        // or to nothing if there was none
+        activePath = null;
+        activePoint = -1;
       }
     }
-    print("UNDO: New Paths ${beforeLen} -> ${drawPathHistory.length}");
   }
 
-  void undoSelect() {
-    // TEMP Disabling
-    // if (activePathHistory.length >= 2) {
-    //   activePathHistory.removeLast();
-    //   activePointHistory.removeLast();
-    //   var lastPathNumber = activePathHistory.last;
-    //   if (lastPathNumber != null &&
-    //       lastPathNumber >= 0 &&
-    //       lastPathNumber < drawPaths.length) {
-    //     activePath = drawPaths[lastPathNumber];
-    //     activePoint = activePointHistory.last;
-    //   }
-    // }
-  }
   // try to fetch a nearby pen point
   void selectMode(DrawyInteract interact, Vector2 mousePosition) {
     // Start Drag
+
     if (interact == DrawyInteract.start) {
       // BEZIER ACTIVE CHECK
       if (activePointIndexValid()) {
@@ -233,15 +243,7 @@ class Drawy {
       activeBezier = DrawyBezierSelected.none;
       // TEMP Disabling select mode in history
       // DrawyPath? tempPath = activePath;
-      // if (tempPath != null) {
-      //   // save paths
-      //   drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
-      //   // save active path
-      //   int activePathIndex = drawPaths.indexOf(tempPath);
-      //   activePathHistory.add(activePathIndex);
-      //   // save active point
-      //   activePointHistory.add(activePoint);
-      // }
+      savePathStates();
     }
   }
 
