@@ -69,6 +69,7 @@ class Drawy {
     drawPaths.add(newPath);
   }
 
+  bool goingInReverse = false;
   // Draws a pan path along mouse position points
   void penMode(DrawyInteract interact, Vector2 mousePosition) {
     var startPath = activePath;
@@ -78,26 +79,47 @@ class Drawy {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
       // If path doesnt exist or the point's invalid OR you're inside of a path trying to add a point
       // : Make a new path
-      var pointAtBeggining = false;
+      var nextPoint = null;
       if (startPath == null) {
         // creating a new path, starting from first point
         startPath = DrawyPath(pathPoints: []);
         drawPaths.add(startPath);
         activePath = startPath;
-      } else if (startPath.pathPoints.isNotEmpty) {
+      } else if (startPath.pathPoints.length > 1) {
         // first point is active, starting from first point
         var firstPoint = startPath.pathPoints[0];
         if (firstPoint.isActive()) {
-          pointAtBeggining = true;
+          goingInReverse = true;
         }
       }
 
-      startPath.addPoint(newPoint, pointAtBeggining);
+      startPath.addPoint(newPoint, goingInReverse);
+
+      startPath.setActivePoints([newPoint]);
+      var pointIndex = startPath.pathPoints.indexOf(newPoint);
+      if (goingInReverse) {
+        var nextPoint = null;
+        if (pointIndex < startPath.pathPoints.length - 2) {
+          nextPoint = startPath.pathPoints[pointIndex + 1];
+          print('found it');
+          if (nextPoint.thisPointCubicPointEnd != null) {
+            newPoint.updateCurves(mousePosition, mousePosition);
+          }
+        }
+      }
+      if (pointIndex > 0 && startPath.pathPoints.length > 1) {
+        var lastPoint = startPath.pathPoints[pointIndex - 1];
+        if (pointIndex < startPath.pathPoints.length - 2) {
+          nextPoint = startPath.pathPoints[pointIndex + 1];
+        }
+        // if last point was curved, so give this one a curve too
+        if (lastPoint.thisPointCubicPointEnd != null) {
+          newPoint.updateCurves(mousePosition, mousePosition);
+        }
+      }
 
       // reconvertPointsToPath path based off new data
       startPath.convertPointsToPath();
-
-      startPath.setActivePoints([newPoint]);
     }
     // if you made 1 single point, you can tweak it
     if (interact == DrawyInteract.move) {
@@ -110,10 +132,19 @@ class Drawy {
         // Since we're now in drag mode, we're adding a control point to wherever
         // the mouse is at now
         var offsetPosition = (mousePosition - position);
-        activePoints[0].updateCurves(
-          position + offsetPosition,
-          position - offsetPosition,
-        );
+
+        if (!goingInReverse) {
+          activePoints[0].updateCurves(
+            position + offsetPosition,
+            position - offsetPosition,
+          );
+        }
+        if (goingInReverse) {
+          activePoints[0].updateCurves(
+            position - offsetPosition,
+            position + offsetPosition,
+          );
+        }
         // reconvertPointsToPath path based off new data
         activePath?.convertPointsToPath();
       }
@@ -121,6 +152,7 @@ class Drawy {
 
     // clone history at end of interation
     if (interact == DrawyInteract.end && startPath != null) {
+      goingInReverse = false;
       savePathStates();
     }
   }
@@ -255,7 +287,9 @@ class Drawy {
 
     // draw all paths
     // Todo , swap this with a static list
-    for (var path in drawPaths) {
+    var pathCount = drawPaths.length;
+    for (int i = 0; i < pathCount; i++) {
+      var path = drawPaths[i];
       path.draw(canvasToDrawOn, PEN_DEFAULT_STROKE);
 
       // don't draw anything else if path isn't selected
@@ -302,6 +336,17 @@ class Drawy {
 
         // textPainter.layout();
         // textPainter.paint(canvasToDrawOn, Offset(pt.position.x, pt.position.y));
+
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: '$y',
+            style: TextStyle(color: Colors.black, fontSize: 18),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+
+        textPainter.layout();
+        textPainter.paint(canvasToDrawOn, Offset(pt.position.x, pt.position.y));
       }
     }
   }

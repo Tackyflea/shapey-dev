@@ -17,11 +17,12 @@ class DrawyPath {
   }
 
   void addPoint(DrawyPoint newPoint, bool? atStart) {
+    print(atStart);
     if (atStart == true) {
       pathPoints.insert(0, newPoint);
       // this is important so once you start drawing, your 0 point isn't at the end
       // so you can start making beziers from start
-      pathPoints = pathPoints.reversed.toList();
+      // pathPoints = pathPoints.reversed.toList();
     } else {
       pathPoints.add(newPoint);
     }
