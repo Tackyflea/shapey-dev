@@ -1,12 +1,13 @@
-// DRAWY START
-
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
+import 'drawy_path.dart';
+import 'drawy_point.dart';
+
+// DRAWY START
 // max distance to check for from center, when trying to click on a point
 double MAX_DISTANCE_TO_POINT = 450;
 // distance to check for to a near path
@@ -109,12 +110,10 @@ class Drawy {
         // Since we're now in drag mode, we're adding a control point to wherever
         // the mouse is at now
         var offsetPosition = (mousePosition - position);
-        print(offsetPosition);
         activePoints[0].updateCurves(
-          position - offsetPosition,
           position + offsetPosition,
+          position - offsetPosition,
         );
-        print(activePath);
         // reconvertPointsToPath path based off new data
         activePath?.convertPointsToPath();
       }
@@ -268,7 +267,6 @@ class Drawy {
       var pointCount = path.pathPoints.length;
       for (int y = 0; y < pointCount; y++) {
         DrawyPoint pt = path.pathPoints[y];
-
         if (pt.isActive()) {
           drawGuidePoint(DrawyGuideType.fullSquare, pt.position);
           if (pt.thisPointCubicPointEnd != null) {
@@ -281,6 +279,29 @@ class Drawy {
           // normal guides
           drawGuidePoint(DrawyGuideType.square, pt.position);
         }
+
+        // TEMP v Delete when not needed
+        // String pos = Offset(pt.position.x, pt.position.y).toString();
+        // var csV = pt.nextPointCubicPointStart;
+        // var ceV = pt.thisPointCubicPointEnd;
+        // String cs = "";
+        // String ce = "";
+        // if (csV != null) {
+        //   cs = Offset(csV.x, csV.y).toString();
+        // }
+        // if (ceV != null) {
+        //   ce = Offset(ceV.x, ceV.y).toString();
+        // }
+        // final textPainter = TextPainter(
+        //   text: TextSpan(
+        //     text: 'Pos: $pos\ncurveStart: $cs\ncurveEnd $ce',
+        //     style: TextStyle(color: Colors.black, fontSize: 10),
+        //   ),
+        //   textDirection: TextDirection.ltr,
+        // );
+
+        // textPainter.layout();
+        // textPainter.paint(canvasToDrawOn, Offset(pt.position.x, pt.position.y));
       }
     }
   }
@@ -411,164 +432,6 @@ class Drawy {
       canvasToDrawOn.drawCircle(pos, size / 2, redPaintFull);
       canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
     }
-  }
-}
-
-// Generic Point which can be expanded with more data than just position
-class DrawyPoint {
-  Vector2 position;
-  // control points are for MATH for controls
-
-  // Default End Cubic , we use the current path
-  Vector2? thisPointCubicPointEnd;
-  // the default start Cublic , we use the last point's end cubic
-  Vector2? nextPointCubicPointStart;
-  // Indicates path is selected
-  bool active = false;
-
-  DrawyPoint({required this.position}) {
-    updatePoint(position);
-  }
-
-  void updatePoint(Vector2 newPosition) {
-    position = newPosition;
-  }
-
-  void setActive(bool newActive) {
-    active = newActive;
-  }
-
-  bool isActive() => active;
-
-  void updateCurves(
-    Vector2? newCubicPointStart,
-    Vector2? newPointCubicPointEnd,
-  ) {
-    nextPointCubicPointStart = newCubicPointStart;
-    thisPointCubicPointEnd = newPointCubicPointEnd;
-  }
-
-  DrawyPoint copy() {
-    var clonePoint = DrawyPoint(position: Vector2.copy(position));
-    clonePoint.updateCurves(
-      nextPointCubicPointStart?.clone(),
-      thisPointCubicPointEnd?.clone(),
-    );
-    clonePoint.active = isActive();
-    return clonePoint;
-  }
-}
-
-// Generic Path wrapper, allows keeping info in a clean point list instead of relying on
-// built in path data
-class DrawyPath {
-  List<DrawyPoint> pathPoints = [];
-
-  DrawyPath({required this.pathPoints});
-
-  var path = Path();
-
-  void draw(Canvas canvasToDrawOn, Paint paintToDrawWith) {
-    canvasToDrawOn.drawPath(path, paintToDrawWith);
-  }
-
-  void addPoint(DrawyPoint newPoint, bool? atStart) {
-    if (atStart == true) {
-      pathPoints.insert(0, newPoint);
-    } else {
-      pathPoints.add(newPoint);
-    }
-  }
-
-  void setActivePoint(DrawyPoint? newPoint, bool isActive) {
-    if (newPoint == null) {
-      return;
-    }
-    int pointIndex = pathPoints.indexOf(newPoint);
-    if (pointIndex == -1) {
-      // point isn't in the list
-      return;
-    }
-    pathPoints[pointIndex].setActive(isActive);
-  }
-
-  // set a group of points on or off, disaling the rest
-  void setActivePoints(List<DrawyPoint?> points) {
-    for (DrawyPoint currentPoint in pathPoints) {
-      setActivePoint(currentPoint, points.contains(currentPoint));
-    }
-  }
-
-  List<DrawyPoint> getActivePoints() {
-    List<DrawyPoint> outPoints = [];
-    for (DrawyPoint currentPoint in pathPoints) {
-      if (currentPoint.isActive()) {
-        outPoints.add(currentPoint);
-      }
-    }
-    return outPoints;
-  }
-
-  DrawyPath copy() {
-    return DrawyPath(
-      pathPoints: pathPoints.map((point) => point.copy()).toList(),
-    );
-  }
-
-  void convertPointsToPath() {
-    var ptCount = pathPoints.length;
-    path.reset();
-    for (var i = 0; i < ptCount; i++) {
-      var endPosition = pathPoints[i].position;
-      DrawyPoint? lastPoint;
-      if (i > 0) {
-        lastPoint = pathPoints[i - 1];
-      }
-      var thisPointCubicPointEnd = pathPoints[i].thisPointCubicPointEnd;
-
-      if (i == 0) {
-        // first point just tap
-        path.moveTo(endPosition.x, endPosition.y);
-      } else {
-        // second point add points
-        if (thisPointCubicPointEnd != null) {
-          Vector2? preExistingCubicPoint;
-          // attempt to use the last point's bezier as a guide
-          if (lastPoint != null && lastPoint.nextPointCubicPointStart != null) {
-            preExistingCubicPoint = lastPoint.nextPointCubicPointStart;
-          }
-          // curve into position if we have a curve point
-          path.cubicTo(
-            preExistingCubicPoint != null
-                ? preExistingCubicPoint.x
-                : thisPointCubicPointEnd.x,
-            preExistingCubicPoint != null
-                ? preExistingCubicPoint.y
-                : thisPointCubicPointEnd.y,
-
-            thisPointCubicPointEnd.x,
-            thisPointCubicPointEnd.y,
-            endPosition.x,
-            endPosition.y,
-          );
-        } else {
-          // back up to just line
-          path.lineTo(endPosition.x, endPosition.y);
-        }
-      }
-      // if (i == ptCount - 1) {
-      //   path.close();
-      // }
-    }
-  }
-
-  List<DrawyPoint> getPoints() => pathPoints;
-  List<Vector2> getPointAsVectors() {
-    List<Vector2> list = [];
-    for (var pt in pathPoints) {
-      list.add(pt.position);
-    }
-    return list;
   }
 }
 
