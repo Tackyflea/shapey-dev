@@ -26,12 +26,29 @@ class DrawyPoint {
 
   bool isActive() => active;
 
+  // assigns curves to curve to for  beziers
   void updateCurves(
     Vector2? newCubicPointStart,
     Vector2? newPointCubicPointEnd,
   ) {
     nextPointCubicPointStart = newCubicPointStart;
     thisPointCubicPointEnd = newPointCubicPointEnd;
+  }
+
+  // cleans up if curves dont need to exist
+  void cleanCurves() {
+    var tVal1 = nextPointCubicPointStart, tVal2 = thisPointCubicPointEnd;
+    if (tVal1 == null || tVal2 == null) {
+      nextPointCubicPointStart = null;
+      thisPointCubicPointEnd = null;
+      return;
+    }
+    var dist = tVal1.distanceToSquared(tVal2);
+    // distance to closed, you're now a non curved point
+    if (dist < 20) {
+      nextPointCubicPointStart = null;
+      thisPointCubicPointEnd = null;
+    }
   }
 
   DrawyPoint copy() {

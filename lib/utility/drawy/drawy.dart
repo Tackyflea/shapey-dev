@@ -79,7 +79,6 @@ class Drawy {
       DrawyPoint newPoint = DrawyPoint(position: mousePosition);
       // If path doesnt exist or the point's invalid OR you're inside of a path trying to add a point
       // : Make a new path
-      var nextPoint = null;
       if (startPath == null) {
         // creating a new path, starting from first point
         startPath = DrawyPath(pathPoints: []);
@@ -96,27 +95,8 @@ class Drawy {
       startPath.addPoint(newPoint, goingInReverse);
 
       startPath.setActivePoints([newPoint]);
-      var pointIndex = startPath.pathPoints.indexOf(newPoint);
-      if (goingInReverse) {
-        var nextPoint = null;
-        if (pointIndex < startPath.pathPoints.length - 2) {
-          nextPoint = startPath.pathPoints[pointIndex + 1];
-          print('found it');
-          if (nextPoint.thisPointCubicPointEnd != null) {
-            newPoint.updateCurves(mousePosition, mousePosition);
-          }
-        }
-      }
-      if (pointIndex > 0 && startPath.pathPoints.length > 1) {
-        var lastPoint = startPath.pathPoints[pointIndex - 1];
-        if (pointIndex < startPath.pathPoints.length - 2) {
-          nextPoint = startPath.pathPoints[pointIndex + 1];
-        }
-        // if last point was curved, so give this one a curve too
-        if (lastPoint.thisPointCubicPointEnd != null) {
-          newPoint.updateCurves(mousePosition, mousePosition);
-        }
-      }
+      // give point curves regardless
+      newPoint.updateCurves(mousePosition, mousePosition);
 
       // reconvertPointsToPath path based off new data
       startPath.convertPointsToPath();
@@ -126,25 +106,23 @@ class Drawy {
       if (activePoints != null && activePoints.length == 1) {
         // grab how far we moved
         var position = activePoints[0].position;
-        var distanceMoved = position.distanceToSquared(mousePosition);
+        // var distanceMoved = position.distanceToSquared(mousePosition);
         // early return if you havent moved enough, or active point gets lost
-        if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
+        // if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
+
         // Since we're now in drag mode, we're adding a control point to wherever
         // the mouse is at now
         var offsetPosition = (mousePosition - position);
-
-        if (!goingInReverse) {
-          activePoints[0].updateCurves(
-            position + offsetPosition,
-            position - offsetPosition,
-          );
-        }
+        // going backwards, flip curves
         if (goingInReverse) {
-          activePoints[0].updateCurves(
-            position - offsetPosition,
-            position + offsetPosition,
-          );
+          offsetPosition = -offsetPosition;
         }
+
+        activePoints[0].updateCurves(
+          position + offsetPosition,
+          position - offsetPosition,
+        );
+
         // reconvertPointsToPath path based off new data
         activePath?.convertPointsToPath();
       }
@@ -258,6 +236,9 @@ class Drawy {
       if (pickedPoint != null) {
         // Drag point
         dragPoint(pickedPoint, mousePosition);
+        // clean up curves at the end, make them lines if they dont need to be curves
+        // pickedPoint?.cleanCurves();
+        // activePath?.convertPointsToPath();
       } else {
         // Drag path
         //TODO Drag path logic
@@ -267,6 +248,7 @@ class Drawy {
     // End Drag
     if (interact == DrawyInteract.end) {
       activeBezier = DrawyBezierSelected.none;
+
       savePathStates();
     }
   }
