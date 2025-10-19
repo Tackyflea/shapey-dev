@@ -155,9 +155,6 @@ class Drawy {
     final atEnd = i == path.getPoints().length - 1;
     if (!atStart && !atEnd) return;
 
-    if (atStart) print('at beginning');
-    if (atEnd) print('at end');
-
     final otherEnd = atStart ? path.pathPoints.last : path.pathPoints.first;
 
     final distance = start.getPosition().distanceToSquared(
@@ -165,10 +162,9 @@ class Drawy {
     );
     if (distance < MIN_DISTANCE_TO_CLOSE) {
       print("closeIt");
-      path.close();
-      // TODO: NOTE TO SELF, DO NOT USE .CLOSE() it's cursed
-      // TODO: Maybe link the start and beggining path position and make the curves hybrid?
-      // pathToCheck.convertPointsToPath();
+      // Note: Commeting out for now, until we figure out how to make individual curves
+      // Now when we close the curves overlap each other
+      // path.close();
     }
   }
 

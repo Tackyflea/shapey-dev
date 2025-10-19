@@ -12,6 +12,10 @@ class DrawyPath {
   // The REAL point data
   List<DrawyPoint> pathPoints = [];
 
+  // for fasterLookups
+  Map<DrawyPoint, int> get _pathPointsIndexMap => {
+    for (var i = 0; i < pathPoints.length; i++) pathPoints[i]: i,
+  };
   // indicates to draw path closed or not
   var closed = false;
 
@@ -38,8 +42,22 @@ class DrawyPath {
     Vector2? newP, {
     (Vector2?, Vector2?)? newCurve,
   }) {
+    // validate point
+    int? pointIndex = _pathPointsIndexMap[pointToUpdate];
+    if (pointIndex == null) {
+      return;
+    }
+
     if (newP != null) {
-      pointToUpdate.updatePosition(newP);
+      // linked move first and last point on closed paths
+      if (isClosed() == true &&
+          (pointIndex == 0 || pointIndex == pathPoints.length - 1)) {
+        pathPoints[0].updatePosition(newP);
+        pathPoints[pathPoints.length - 1].updatePosition(newP);
+      } else {
+        // normal move otherwise
+        pointToUpdate.updatePosition(newP);
+      }
     }
     if (newCurve != null) {
       pointToUpdate.updateCurves(newCurve.$1, newCurve.$2);
@@ -52,8 +70,8 @@ class DrawyPath {
     if (newPoint == null) {
       return;
     }
-    int pointIndex = pathPoints.indexOf(newPoint);
-    if (pointIndex == -1) {
+    int? pointIndex = _pathPointsIndexMap[newPoint];
+    if (pointIndex == null) {
       // point isn't in the list
       return;
     }
@@ -91,6 +109,9 @@ class DrawyPath {
     path.reset();
 
     for (var i = 0; i < ptCount; i++) {
+      // update the index map every time
+      _pathPointsIndexMap[pathPoints[i]] = i;
+
       var endPosition = pathPoints[i].getPosition();
       var isFirstPoint = i == 0;
       var thisPointCubicPointEnd = pathPoints[i].thisPointCubicPointEnd;
