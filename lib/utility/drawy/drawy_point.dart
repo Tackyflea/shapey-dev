@@ -2,7 +2,7 @@ import 'package:vector_math/vector_math.dart';
 
 // Generic Point which can be expanded with more data than just position
 class DrawyPoint {
-  Vector2 position;
+  late Vector2 _position;
   // control points are for MATH for controls
 
   // Default End Cubic , we use the current path
@@ -12,12 +12,8 @@ class DrawyPoint {
   // Indicates path is selected
   bool active = false;
 
-  DrawyPoint({required this.position}) {
-    updatePoint(position);
-  }
-
-  void updatePoint(Vector2 newPosition) {
-    position = newPosition;
+  DrawyPoint({required Vector2 position}) {
+    updatePosition(position);
   }
 
   void setActive(bool newActive) {
@@ -26,6 +22,11 @@ class DrawyPoint {
 
   bool isActive() => active;
 
+  void updatePosition(Vector2 newPosition) {
+    _position = newPosition;
+  }
+
+  Vector2 getPosition() => _position;
   // assigns curves to curve to for  beziers
   void updateCurves(
     Vector2? newCubicPointStart,
@@ -52,7 +53,7 @@ class DrawyPoint {
   }
 
   DrawyPoint copy() {
-    var clonePoint = DrawyPoint(position: Vector2.copy(position));
+    var clonePoint = DrawyPoint(position: Vector2.copy(_position));
     clonePoint.updateCurves(
       nextPointCubicPointStart?.clone(),
       thisPointCubicPointEnd?.clone(),

@@ -32,6 +32,22 @@ class DrawyPath {
     }
   }
 
+  // update individual point data on path
+  void updatePoint(
+    DrawyPoint pointToUpdate,
+    Vector2? newP, {
+    (Vector2?, Vector2?)? newCurve,
+  }) {
+    if (newP != null) {
+      pointToUpdate.updatePosition(newP);
+    }
+    if (newCurve != null) {
+      pointToUpdate.updateCurves(newCurve.$1, newCurve.$2);
+    }
+
+    convertPointsToPath();
+  }
+
   void setActivePoint(DrawyPoint? newPoint, bool isActive) {
     if (newPoint == null) {
       return;
@@ -75,7 +91,7 @@ class DrawyPath {
     path.reset();
 
     for (var i = 0; i < ptCount; i++) {
-      var endPosition = pathPoints[i].position;
+      var endPosition = pathPoints[i].getPosition();
       var isFirstPoint = i == 0;
       var thisPointCubicPointEnd = pathPoints[i].thisPointCubicPointEnd;
 
@@ -86,6 +102,14 @@ class DrawyPath {
       }
 
       var lastPoint = pathPoints[i - 1];
+      // TODO: DONT TO THIS this function is for visual updates only
+      // NOT to actually change point data, this could break history
+      // if (i == ptCount - 1 && isClosed()) {
+      //   // you're on the last point, check if its a closed one
+      //   print("i'm on last point, AND its closed");
+      //   // snap it to the first point of the closed shape
+      //   pathPoints[i].updatePosition(pathPoints[0].getPosition());
+      // }
       if (thisPointCubicPointEnd != null) {
         // Draw cubic bezier curve
         var previousCubicPoint = lastPoint.nextPointCubicPointStart;
@@ -108,17 +132,13 @@ class DrawyPath {
         path.lineTo(endPosition.x, endPosition.y);
       }
     }
-
-    if (isClosed()) {
-      path.close();
-    }
   }
 
   List<DrawyPoint> getPoints() => pathPoints;
   List<Vector2> getPointAsVectors() {
     List<Vector2> list = [];
     for (var pt in pathPoints) {
-      list.add(pt.position);
+      list.add(pt.getPosition());
     }
     return list;
   }
@@ -126,7 +146,7 @@ class DrawyPath {
   // mark path as closed and make the last point be where first point is
   void close() {
     closed = true;
-    pathPoints[pathPoints.length - 1].position = pathPoints[0].position;
+    // pathPoints[pathPoints.length - 1].getPosition() = pathPoints[0].getPosition();
   }
 
   bool isClosed() => closed;

@@ -101,17 +101,18 @@ class Drawy {
 
       startPath.setActivePoints([startPoint]);
       // give point curves regardless
-      startPoint.updateCurves(mousePosition, mousePosition);
-
-      // reconvertPointsToPath path based off new data
-      startPath.convertPointsToPath();
+      startPath.updatePoint(
+        startPoint,
+        null,
+        newCurve: (mousePosition, mousePosition),
+      );
     }
     // if you made 1 single point, you can tweak it
     if (interact == DrawyInteract.move) {
       if (activePoints != null && activePoints.length == 1) {
         startPoint = activePoints[0];
         // grab how far we moved
-        var position = startPoint.position;
+        var position = startPoint.getPosition();
         // var distanceMoved = position.distanceToSquared(mousePosition);
         // early return if you havent moved enough, or active point gets lost
         // if (distanceMoved < PEN_MINIMUM_DRAG_DISTANCE) return;
@@ -124,13 +125,11 @@ class Drawy {
           offsetPosition = -offsetPosition;
         }
 
-        startPoint.updateCurves(
-          position + offsetPosition,
-          position - offsetPosition,
+        startPath?.updatePoint(
+          startPoint,
+          null,
+          newCurve: (position + offsetPosition, position - offsetPosition),
         );
-
-        // reconvertPointsToPath path based off new data
-        activePath?.convertPointsToPath();
       }
     }
 
@@ -161,9 +160,12 @@ class Drawy {
 
     final otherEnd = atStart ? path.pathPoints.last : path.pathPoints.first;
 
-    final distance = start.position.distanceToSquared(otherEnd.position);
+    final distance = start.getPosition().distanceToSquared(
+      otherEnd.getPosition(),
+    );
     if (distance < MIN_DISTANCE_TO_CLOSE) {
       print("closeIt");
+      path.close();
       // TODO: NOTE TO SELF, DO NOT USE .CLOSE() it's cursed
       // TODO: Maybe link the start and beggining path position and make the curves hybrid?
       // pathToCheck.convertPointsToPath();
@@ -234,7 +236,7 @@ class Drawy {
       bool isNearMouse(Vector2 p) =>
           p.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT;
       bool isFarFromPoint(Vector2 p) =>
-          pt!.position.distanceToSquared(p) > MIN_DISTANCE_TO_START_CURVE;
+          pt!.getPosition().distanceToSquared(p) > MIN_DISTANCE_TO_START_CURVE;
 
       if (isValid(a) && isNearMouse(a!) && isFarFromPoint(a)) {
         activeBezier = DrawyBezierSelected.A;
@@ -328,21 +330,21 @@ class Drawy {
           final cubicEnd = pt.thisPointCubicPointEnd;
           final cubicStart = pt.nextPointCubicPointStart;
 
-          drawGuidePoint(DrawyGuideType.fullSquare, pt.position);
+          drawGuidePoint(DrawyGuideType.fullSquare, pt.getPosition());
 
           for (final p in [cubicEnd, cubicStart]) {
             if (p != null &&
-                pt.position.distanceToSquared(p) >
+                pt.getPosition().distanceToSquared(p) >
                     MIN_DISTANCE_TO_START_CURVE) {
               drawGuidePoint(DrawyGuideType.circle, p);
             }
           }
         } else {
-          drawGuidePoint(DrawyGuideType.square, pt.position);
+          drawGuidePoint(DrawyGuideType.square, pt.getPosition());
         }
 
         // TEMP v Delete when not needed
-        String pos = Offset(pt.position.x, pt.position.y).toString();
+        String pos = Offset(pt.getPosition().x, pt.getPosition().y).toString();
         var csV = pt.nextPointCubicPointStart;
         var ceV = pt.thisPointCubicPointEnd;
         String cs = "";
@@ -362,7 +364,10 @@ class Drawy {
         );
 
         textPainter.layout();
-        textPainter.paint(canvasToDrawOn, Offset(pt.position.x, pt.position.y));
+        textPainter.paint(
+          canvasToDrawOn,
+          Offset(pt.getPosition().x, pt.getPosition().y),
+        );
       }
     }
   }
@@ -377,19 +382,26 @@ class Drawy {
     }
     // Move Drag
 
-    final delta = point.position - mousePosition;
+    final delta = point.getPosition() - mousePosition;
     // BEZIER move mode
     if (activeBezier != DrawyBezierSelected.none) {
       // These are currently mirrors of themselves
       // TODO: Figure out how to split beziers properly so you can individually control them
       Vector2? ctrlA = point.thisPointCubicPointEnd;
       if (activeBezier == DrawyBezierSelected.A && ctrlA != null) {
-        point.updateCurves(point.position + delta, point.position - delta);
+        pathToCheck.updatePoint(
+          point,
+          null,
+          newCurve: (point.getPosition() + delta, point.getPosition() - delta),
+        );
       }
       if (activeBezier == DrawyBezierSelected.B) {
-        point.updateCurves(point.position - delta, point.position + delta);
+        pathToCheck.updatePoint(
+          point,
+          null,
+          newCurve: (point.getPosition() - delta, point.getPosition() + delta),
+        );
       }
-      activePath?.convertPointsToPath();
       return;
     }
 
@@ -400,9 +412,11 @@ class Drawy {
     Vector2? newBezierA = controlA != null ? controlA - delta : null;
     Vector2? newBezierB = controlB != null ? controlB - delta : null;
 
-    point.position = mousePosition;
-    point.updateCurves(newBezierB, newBezierA);
-    pathToCheck.convertPointsToPath();
+    pathToCheck.updatePoint(
+      point,
+      mousePosition,
+      newCurve: (newBezierB, newBezierA),
+    );
   }
 
   // Utility
@@ -439,7 +453,7 @@ class Drawy {
     var distanceToCheckAgainst = MAX_DISTANCE_TO_POINT;
     int amountOfPoints = pointsToCheckAgainst.length;
     for (int i = 0; i < amountOfPoints; i++) {
-      var pt = pointsToCheckAgainst[i].position;
+      var pt = pointsToCheckAgainst[i].getPosition();
       // POSITION CHECK
       var distance = pt.distanceToSquared(vectorToCheck);
       if (distanceToCheckAgainst > distance) {
