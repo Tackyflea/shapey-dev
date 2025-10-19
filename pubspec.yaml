@@ -31,7 +31,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_layout_grid: ^2.0.0
   hooks_riverpod: ^3.0.0
   flutter_hooks:
 
