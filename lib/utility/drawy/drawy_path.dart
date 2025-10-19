@@ -6,11 +6,16 @@ import 'drawy_point.dart';
 // Generic Path wrapper, allows keeping info in a clean point list instead of relying on
 // built in path data
 class DrawyPath {
+  // the VISUAL path
+  var path = Path();
+
+  // The REAL point data
   List<DrawyPoint> pathPoints = [];
 
-  DrawyPath({required this.pathPoints});
+  // indicates to draw path closed or not
+  var closed = false;
 
-  var path = Path();
+  DrawyPath({required this.pathPoints});
 
   void draw(Canvas canvasToDrawOn, Paint paintToDrawWith) {
     canvasToDrawOn.drawPath(path, paintToDrawWith);
@@ -57,9 +62,12 @@ class DrawyPath {
   }
 
   DrawyPath copy() {
-    return DrawyPath(
+    var pathCopy = DrawyPath(
       pathPoints: pathPoints.map((point) => point.copy()).toList(),
     );
+    pathCopy.closed = closed;
+
+    return pathCopy;
   }
 
   void convertPointsToPath() {
@@ -100,6 +108,10 @@ class DrawyPath {
         path.lineTo(endPosition.x, endPosition.y);
       }
     }
+
+    if (isClosed()) {
+      path.close();
+    }
   }
 
   List<DrawyPoint> getPoints() => pathPoints;
@@ -110,4 +122,12 @@ class DrawyPath {
     }
     return list;
   }
+
+  // mark path as closed and make the last point be where first point is
+  void close() {
+    closed = true;
+    pathPoints[pathPoints.length - 1].position = pathPoints[0].position;
+  }
+
+  bool isClosed() => closed;
 }
