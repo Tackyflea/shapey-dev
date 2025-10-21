@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shapey/widgets/PropertiesWidget.dart';
 import 'package:shapey/sections/TitleBar.dart';
 import 'sections/StageWidget.dart';
-import 'sections/ToolsWidget.dart';
-import 'sections/TopWidget.dart';
+import 'widgets/ToolsWidget.dart';
+import 'widgets/TimelineWidget.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 class MainStage extends StatefulWidget {
@@ -12,7 +13,6 @@ class MainStage extends StatefulWidget {
   State<MainStage> createState() => _MainStageState();
 }
 
-const borderColor = Color.fromARGB(120, 90, 147, 178);
 double borderSize = 1;
 
 class _MainStageState extends State<MainStage> {
@@ -26,18 +26,10 @@ class _MainStageState extends State<MainStage> {
     double windowWidth =
         windowSize.width - padding.left - padding.right - (borderSize * 4);
 
-    double titleBarHeight = 30;
-    windowHeight -= titleBarHeight;
     // Setup restrictions
-    double toolsWidth = 100;
-    double tlHeight = 150;
-    double tlHeightMin = 100;
-    double smaillHeightMin = 400;
-    double verySmallWidthMin = 500;
-    // limit left side tools width
-    if (windowWidth < verySmallWidthMin) {
-      toolsWidth = 50;
-    }
+    double tlHeight = 100;
+    double tlHeightMin = 50;
+    double smaillHeightMin = 640;
     // limit timeline tools height
     if (windowHeight < smaillHeightMin) {
       double responsiveHeight = tlHeight + (windowHeight - smaillHeightMin);
@@ -46,7 +38,7 @@ class _MainStageState extends State<MainStage> {
         tlHeight = tlHeightMin;
       }
     }
-    double stageWidth = windowWidth - toolsWidth;
+    double stageWidth = windowWidth;
     double mainHeight = windowHeight - tlHeight;
 
     return Scaffold(
@@ -54,7 +46,7 @@ class _MainStageState extends State<MainStage> {
       body: Center(
         //https://pub.dev/documentation/flutter_layout_grid/latest/
         child: WindowBorder(
-          color: borderColor,
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
           width: borderSize,
           child: Container(
             alignment: Alignment(0, 0),
@@ -62,32 +54,16 @@ class _MainStageState extends State<MainStage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                // header?
-                TitleBar(titleBarHeight: titleBarHeight - borderSize),
+                Container(
+                  width: stageWidth,
+                  height: mainHeight,
+                  alignment: Alignment(0, 0),
+                  child: StageWidget(windowSize: windowWidth),
+                ),
                 Container(
                   height: tlHeight,
                   alignment: Alignment(0, 0),
-                  child: TopWidget(),
-                ),
-                Container(
-                  // mainStage?
-                  height: mainHeight,
-                  alignment: Alignment(0, 0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: toolsWidth,
-                        alignment: Alignment(0, 0),
-                        // color: Colors.red,
-                        child: ToolsWidget(),
-                      ),
-                      Container(
-                        width: stageWidth,
-                        alignment: Alignment(0, 0),
-                        child: StageWidget(),
-                      ),
-                    ],
-                  ),
+                  child: TimelineWidget(),
                 ),
               ],
             ),

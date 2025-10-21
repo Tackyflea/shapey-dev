@@ -12,25 +12,28 @@ const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
 );
 
 class TitleBar extends ConsumerWidget {
-  final double titleBarHeight = 30;
+  final double titleBarHeight = 31;
   const TitleBar({super.key, required titleBarHeight});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      color: Colors.white,
-      height: titleBarHeight,
-      child: Column(
-        children: [
-          WindowTitleBarBox(
-            child: Row(
-              children: [
-                Expanded(child: MoveWindow()),
-                const WindowButtons(),
-              ],
+    return Material(
+      elevation: 3,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: SizedBox(
+        height: titleBarHeight,
+        child: Column(
+          children: [
+            WindowTitleBarBox(
+              child: Row(
+                children: [
+                  Expanded(child: MoveWindow()),
+                  const WindowButtons(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
