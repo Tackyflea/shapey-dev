@@ -12,14 +12,41 @@ class LayerNameWidget extends StatefulWidget {
     this.locked = false,
     this.visible = true,
   });
-
   @override
   State<LayerNameWidget> createState() => _LayerNameState();
 }
 
 class _LayerNameState extends State<LayerNameWidget> {
   late bool visible;
+  late String name;
   late bool locked;
+
+  late TextEditingController textEditController;
+  @override
+  void initState() {
+    super.initState();
+    name = widget.name;
+    visible = widget.visible;
+    locked = widget.locked;
+    textEditController = TextEditingController(text: name);
+  }
+
+  @override
+  void dispose() {
+    textEditController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant LayerNameWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.name != widget.name) {
+      name = widget.name;
+      textEditController.text = name;
+    }
+    if (oldWidget.visible != widget.visible) visible = widget.visible;
+    if (oldWidget.locked != widget.locked) locked = widget.locked;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +60,28 @@ class _LayerNameState extends State<LayerNameWidget> {
       ),
     );
 
-    Text layerText = Text(
-      widget.name,
-
-      style: TextStyle(
-        fontWeight: FontWeight.w600,
-        color: fgColor,
-        fontSize: textTheme.bodySmall?.fontSize,
+    var layerTextStyle = TextStyle(
+      fontWeight: FontWeight.w600,
+      color: fgColor,
+      fontSize: textTheme.bodySmall?.fontSize,
+    );
+    Flexible layerText = Flexible(
+      child: SizedBox(
+        height: 30,
+        child: TextField(
+          controller: textEditController,
+          // readOnly: !widget.textFieldEditable,
+          style: layerTextStyle,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 3),
+            border: InputBorder.none,
+          ),
+        ),
       ),
     );
+
     var lockAsset = const Image(
       image: AssetImage('assets/images/icn_lock_black.png'),
     );
@@ -54,12 +94,12 @@ class _LayerNameState extends State<LayerNameWidget> {
       padding: EdgeInsets.all(0),
       constraints: BoxConstraints(maxWidth: 18),
       alignment: Alignment.center,
-      icon: widget.locked == true
+      icon: locked == true
           ? Icon(color: fgColor, size: icnWidth, Icons.lock_rounded)
           : Icon(color: fgColor, size: icnWidth, Icons.lock_open_rounded),
       onPressed: () {
         setState(() {
-          widget.locked = !widget.locked;
+          locked = !locked;
         });
       },
     );
@@ -68,12 +108,12 @@ class _LayerNameState extends State<LayerNameWidget> {
       padding: EdgeInsets.all(0),
       constraints: BoxConstraints(maxWidth: 18),
       alignment: Alignment.center,
-      icon: widget.visible == true
+      icon: visible == true
           ? Icon(color: fgColor, size: icnWidth, Icons.visibility_rounded)
           : Icon(color: fgColor, size: icnWidth, Icons.visibility_off_rounded),
       onPressed: () {
         setState(() {
-          widget.visible = !widget.visible;
+          visible = !visible;
         });
       },
     );

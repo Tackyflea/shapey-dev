@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_notifier.dart';
+import 'package:shapey/widgets/timeline/LayerNameHeadingWidget.dart';
 import 'package:shapey/widgets/timeline/LayerNameWidget.dart';
 import 'package:shapey/utility/PanelWidget.dart';
 import 'package:shapey/utility/Utility.dart';
@@ -79,18 +80,6 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
       color: colorScheme.primaryContainer,
       width: 1.0,
     );
-    final tlLayerViewHeader = Container(
-      width: layerViewWidth,
-      height: layerViewHeaderHeight,
-      decoration: BoxDecoration(
-        color: colorScheme.onPrimaryContainer,
-        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8.0)),
-        border: Border(
-          bottom: tlLayerViewHeaderBorder,
-          top: tlLayerViewHeaderBorder,
-        ),
-      ),
-    );
     final tlLayerViewFooter = Container(
       width: layerViewWidth,
       height: layerViewFooterHeight,
@@ -168,7 +157,14 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
               left: 0,
               child: scrollableLayers,
             ),
-            Material(elevation: 3, child: tlLayerViewHeader),
+            Material(
+              elevation: 3,
+              child: LayerNameHeadingWidget(
+                width: layerViewWidth,
+                height: layerViewHeaderHeight,
+                scrollController: tlTimelineViewScrollbar,
+              ),
+            ),
             Positioned(bottom: 0, child: tlLayerViewFooter),
           ],
         ),
@@ -178,7 +174,7 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
       right: 0,
       width: windowWidth - layerViewWidth,
       height: widget.timelineHeight - titleBarHeight,
-      child: Container(color: colorScheme.secondaryContainer),
+      child: Container(color: colorScheme.surfaceContainerHighest),
     );
     return PanelWidget(
       name: "Timeline",
