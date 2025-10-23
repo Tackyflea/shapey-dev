@@ -21,6 +21,10 @@ class PanelWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final BorderSide headerBorder = BorderSide(
+      color: colorScheme.primaryContainer,
+      width: 2.0,
+    );
 
     return Material(
       elevation: 4,
@@ -30,11 +34,18 @@ class PanelWidget extends ConsumerWidget {
         child: Column(
           children: [
             Container(
+              decoration: BoxDecoration(
+                color: colorScheme.onSecondaryContainer,
+                border: Border(
+                  left: headerBorder,
+                  right: headerBorder,
+                  top: headerBorder,
+                ),
+              ),
               width: double.infinity,
               height: 25,
-              color: colorScheme.onSecondaryContainer,
               alignment: Alignment.topLeft,
-              padding: EdgeInsetsGeometry.fromLTRB(6, 3, 6, 2),
+              padding: EdgeInsetsGeometry.fromLTRB(5, 1.5, 0, 0),
               child: Text(
                 name,
 

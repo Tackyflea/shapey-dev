@@ -5,6 +5,7 @@ import 'package:shapey/sections/TitleBar.dart';
 import 'package:shapey/utility/TouchViewer.dart';
 import 'package:shapey/app_state/app_notifier.dart';
 import 'package:shapey/widgets/PropertiesWidget.dart';
+import 'package:shapey/widgets/TimelineWidget.dart';
 import 'package:shapey/widgets/ToolsWidget.dart';
 
 class StageWidget extends ConsumerWidget {
@@ -18,17 +19,21 @@ class StageWidget extends ConsumerWidget {
     var toolData = ref.watch(appNotifier);
     double sidePanelsY = 40;
     double titleBarSize = 25;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
 
     TouchViewer mainViewer = TouchViewer(
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        // decoration: const BoxDecoration(color: Colors.white),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [ShapeCanvas(width: 800, height: 500)],
+        child: Align(
+          alignment: Alignment(0, -0.86),
+          child: Transform.scale(
+            scale: 0.85,
+            child: Material(
+              elevation: 2,
+              child: ShapeCanvas(width: 800, height: 500),
+            ),
+          ),
         ),
       ),
     );
@@ -49,6 +54,7 @@ class StageWidget extends ConsumerWidget {
     var ToolsDisplay = Positioned(
       // text info
       left: 20.0,
+      top: 0,
       bottom: sidePanelsY,
       child: Container(
         width: 50,
@@ -61,12 +67,24 @@ class StageWidget extends ConsumerWidget {
     var PropertiesDisplay = Positioned(
       // text info
       right: 20.0,
+      top: 0,
       bottom: sidePanelsY,
       child: Container(
         width: 200,
         alignment: Alignment(0, 0),
         // color: Colors.red,
         child: PropertiesWidget(),
+      ),
+    );
+    var TimelineDisplay = Positioned(
+      // text info
+      bottom: 0,
+      left: 0,
+      child: Container(
+        width: windowSize,
+        height: 200,
+        alignment: Alignment(1, 0),
+        child: TimelineWidget(timelineHeight: 200),
       ),
     );
     // the info box on whats selected
@@ -97,6 +115,7 @@ class StageWidget extends ConsumerWidget {
         ToolsDisplay,
         PropertiesDisplay,
         titleBarDisplay,
+        TimelineDisplay,
       ],
     );
   }

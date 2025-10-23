@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shapey/widgets/PropertiesWidget.dart';
-import 'package:shapey/sections/TitleBar.dart';
 import 'sections/StageWidget.dart';
-import 'widgets/ToolsWidget.dart';
-import 'widgets/TimelineWidget.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 class MainStage extends StatefulWidget {
@@ -26,21 +22,6 @@ class _MainStageState extends State<MainStage> {
     double windowWidth =
         windowSize.width - padding.left - padding.right - (borderSize * 4);
 
-    // Setup restrictions
-    double tlHeight = 100;
-    double tlHeightMin = 50;
-    double smaillHeightMin = 640;
-    // limit timeline tools height
-    if (windowHeight < smaillHeightMin) {
-      double responsiveHeight = tlHeight + (windowHeight - smaillHeightMin);
-      tlHeight = responsiveHeight;
-      if (tlHeight < tlHeightMin) {
-        tlHeight = tlHeightMin;
-      }
-    }
-    double stageWidth = windowWidth;
-    double mainHeight = windowHeight - tlHeight;
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceDim,
       body: Center(
@@ -55,15 +36,10 @@ class _MainStageState extends State<MainStage> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Container(
-                  width: stageWidth,
-                  height: mainHeight,
+                  width: windowWidth,
+                  height: windowHeight,
                   alignment: Alignment(0, 0),
                   child: StageWidget(windowSize: windowWidth),
-                ),
-                Container(
-                  height: tlHeight,
-                  alignment: Alignment(0, 0),
-                  child: TimelineWidget(),
                 ),
               ],
             ),
