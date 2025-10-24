@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 //TODO: Figureout how to make the variables final and still be changed/ accessed externally
-class LayerNameWidget extends StatefulWidget {
+class LayerName extends StatefulWidget {
   final String name;
   bool visible;
   bool locked;
-  LayerNameWidget({
+  LayerName({
     super.key,
     required this.name,
     this.locked = false,
     this.visible = true,
   });
   @override
-  State<LayerNameWidget> createState() => _LayerNameState();
+  State<LayerName> createState() => _LayerNameState();
 }
 
-class _LayerNameState extends State<LayerNameWidget> {
+class _LayerNameState extends State<LayerName> {
   late bool visible;
   late String name;
   late bool locked;
@@ -38,7 +38,7 @@ class _LayerNameState extends State<LayerNameWidget> {
   }
 
   @override
-  void didUpdateWidget(covariant LayerNameWidget oldWidget) {
+  void didUpdateWidget(covariant LayerName oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.name != widget.name) {
       name = widget.name;

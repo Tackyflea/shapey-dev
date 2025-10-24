@@ -3,11 +3,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_notifier.dart';
 
 //TODO: Figureout how to make the variables final and still be changed/ accessed externally
-class LayerNameHeadingWidget extends ConsumerWidget {
+class LayerNameHeading extends ConsumerWidget {
   final double width;
   final double height;
   final ScrollController scrollController;
-  const LayerNameHeadingWidget({
+  const LayerNameHeading({
     super.key,
     required this.width,
     required this.height,

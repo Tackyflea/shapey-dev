@@ -5,6 +5,7 @@ import 'package:shapey/widgets/timeline/LayerNameHeadingWidget.dart';
 import 'package:shapey/widgets/timeline/LayerNameWidget.dart';
 import 'package:shapey/utility/PanelWidget.dart';
 import 'package:shapey/utility/Utility.dart';
+import 'package:shapey/widgets/timeline/TimelineKeysWidget.dart';
 
 const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 2,
@@ -66,7 +67,6 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final TextTheme textTheme = Theme.of(context).textTheme;
     Size windowSize = MediaQuery.of(context).size;
     var padding = MediaQuery.of(context).padding;
     double windowWidth = windowSize.width - padding.left - padding.right - 4;
@@ -96,22 +96,22 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
     // Controls all the layers
     final tlLayerViewLayersColumn = Column(
       children: [
-        LayerNameWidget(name: "sdfsd", locked: true),
-        LayerNameWidget(name: "sdfsdfsdfsd"),
-        LayerNameWidget(name: "sds"),
-        LayerNameWidget(name: "sdfsdfsdfsd", locked: true),
-        LayerNameWidget(name: "d", visible: false),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
-        LayerNameWidget(name: "a"),
+        LayerName(name: "sdfsd", locked: true),
+        LayerName(name: "sdfsdfsdfsd"),
+        LayerName(name: "sds"),
+        LayerName(name: "sdfsdfsdfsd", locked: true),
+        LayerName(name: "d", visible: false),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
+        LayerName(name: "a"),
       ],
     );
 
@@ -159,7 +159,7 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
             ),
             Material(
               elevation: 3,
-              child: LayerNameHeadingWidget(
+              child: LayerNameHeading(
                 width: layerViewWidth,
                 height: layerViewHeaderHeight,
                 scrollController: tlTimelineViewScrollbar,
@@ -170,15 +170,19 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
         ),
       ),
     );
-    final tlTimelineView = Positioned(
-      right: 0,
-      width: windowWidth - layerViewWidth,
-      height: widget.timelineHeight - titleBarHeight,
-      child: Container(color: colorScheme.surfaceContainerHighest),
-    );
+
     return PanelWidget(
       name: "Timeline",
-      child: Stack(children: [tlTimelineView, tlLayerView]),
+      child: Stack(
+        children: [
+          TimelineKeys(
+            width: windowWidth - layerViewWidth,
+            height: widget.timelineHeight - titleBarHeight,
+            headerHeight: layerViewHeaderHeight,
+          ),
+          tlLayerView,
+        ],
+      ),
     );
   }
 }
