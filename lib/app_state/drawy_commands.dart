@@ -23,7 +23,7 @@ class DrawyPenCommand implements AppCommand {
   }
 
   @override
-  String getTitle() => 'add pen point at ${this.newPosition}';
+  String getTitle() => 'add pen point at $newPosition';
 }
 
 class DrawySelectCommand implements AppCommand {

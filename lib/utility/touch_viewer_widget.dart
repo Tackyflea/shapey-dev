@@ -1,9 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:keymap/keymap.dart';
-import 'package:shapey/app_state/app_notifier.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 /// Interactive viewer meant for right click only panning
 /// [child] The child to pan / drag
@@ -43,7 +40,7 @@ class _TouchViewerSTate extends State<TouchViewer> {
         if (e.buttons == kSecondaryMouseButton && _lastPosition != null) {
           final delta = e.localPosition - _lastPosition!;
           _controller.value = _controller.value.clone()
-            ..translate(delta.dx, delta.dy);
+            ..translateByVector3(Vector3(delta.dx, delta.dy, 0));
           _lastPosition = e.localPosition;
         }
       },

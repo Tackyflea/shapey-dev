@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/ShapeCanvas.dart';
-import 'package:shapey/sections/TitleBar.dart';
-import 'package:shapey/utility/TouchViewer.dart';
-import 'package:shapey/app_state/app_notifier.dart';
-import 'package:shapey/widgets/PropertiesWidget.dart';
-import 'package:shapey/widgets/TimelineWidget.dart';
-import 'package:shapey/widgets/ToolsWidget.dart';
+import 'package:shapey/shape_canvas.dart';
+import 'package:shapey/app_state/app_model.dart';
+import 'package:shapey/sections/titlebar_widget.dart';
+import 'package:shapey/utility/touch_viewer_widget.dart';
+import 'package:shapey/widgets/properties_widget.dart';
+import 'package:shapey/widgets/timeline_widget.dart';
+import 'package:shapey/widgets/tools_widget.dart';
 
 class StageWidget extends ConsumerWidget {
   final double windowSize;

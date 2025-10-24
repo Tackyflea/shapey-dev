@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_notifier.dart';
 
 //TODO: Figureout how to make the variables final and still be changed/ accessed externally
 class LayerNameHeading extends ConsumerWidget {
@@ -24,8 +23,6 @@ class LayerNameHeading extends ConsumerWidget {
     );
     var fgColor = Theme.of(context).colorScheme.onSecondary;
 
-    final state = ref.watch(appNotifier);
-
     var leftSideData = Row(
       spacing: 7,
       children: [
@@ -37,7 +34,7 @@ class LayerNameHeading extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       spacing: 7,
       children: [
-        Container(
+        SizedBox(
           width: 83,
           height: height,
           child: Stack(

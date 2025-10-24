@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_notifier.dart';
+import 'package:shapey/app_state/file_model.dart';
 
 // generic key bg
 class KeyVisual extends StatelessWidget {
@@ -177,15 +176,15 @@ class TimelineKeys extends ConsumerWidget {
     required this.headerHeight,
   });
 
-  final double testDuration = 5; //seconds
-  final double testFPS = 30; // frames per second
-
   final double gridObjectWidth = 8;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    var fileData = ref.read(fileNotifier.notifier);
+    final double tlDuration = fileData.timelineDuration; //second
+    final double tlFPS = fileData.fps; // frames per seconsd
+
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final value = ref.watch(appNotifier);
-    final totalFrames = (testDuration * testFPS).toInt();
+    final totalFrames = (tlDuration * tlFPS).toInt();
 
     final layerBoxes = Column(
       // generate 5 rows
@@ -193,7 +192,7 @@ class TimelineKeys extends ConsumerWidget {
         5,
         (index) => TimelineRow(
           isHeading: isHeading,
-          fps: testFPS,
+          fps: tlFPS,
           size: gridObjectWidth,
           frames: totalFrames,
         ),
@@ -214,7 +213,7 @@ class TimelineKeys extends ConsumerWidget {
       color: colorScheme.secondaryContainer,
       child: TimelineRow(
         isHeading: true,
-        fps: testFPS,
+        fps: tlFPS,
         size: gridObjectWidth,
         frames: totalFrames,
       ),

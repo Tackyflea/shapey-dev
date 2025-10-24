@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
@@ -23,7 +22,7 @@ double MIN_DISTANCE_TO_START_CURVE = 10;
 enum DrawyBezierSelected { none, A, B }
 
 // to indicate what kind of guide to draw
-enum DrawyGuideType { fullSquare, square, circle, TEST }
+enum DrawyGuideType { fullSquare, square, circle, testType }
 
 class Drawy {
   late Canvas canvasToDrawOn;
@@ -77,7 +76,7 @@ class Drawy {
   // Draws a pan path along mouse position points
   void penMode(DrawyInteract interact, Vector2 mousePosition) {
     var startPath = activePath;
-    var startPoint = null;
+    DrawyPoint startPoint;
     List<DrawyPoint>? activePoints = startPath?.getActivePoints();
     // START
     if (interact == DrawyInteract.start) {
@@ -161,7 +160,7 @@ class Drawy {
       otherEnd.getPosition(),
     );
     if (distance < MIN_DISTANCE_TO_CLOSE) {
-      print("closeIt");
+      debugPrint("closeIt");
       // Note: Commeting out for now, until we figure out how to make individual curves
       // Now when we close the curves overlap each other
       // path.close();
@@ -502,7 +501,7 @@ class Drawy {
     } else if (typeToDraw == DrawyGuideType.circle) {
       canvasToDrawOn.drawCircle(pos, size / 2, guidePaintSemiFull);
       canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
-    } else if (typeToDraw == DrawyGuideType.TEST) {
+    } else if (typeToDraw == DrawyGuideType.testType) {
       canvasToDrawOn.drawCircle(pos, size / 2, redPaintFull);
       canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
     }

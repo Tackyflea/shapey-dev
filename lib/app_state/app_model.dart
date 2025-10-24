@@ -1,8 +1,9 @@
-// notifier that the text typed changed
-
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+// Controls the entire app status
 class AppModel {
   const AppModel({
     this.name,
@@ -25,3 +26,36 @@ class AppModel {
     );
   }
 }
+
+class AppNotifier extends Notifier<AppModel> {
+  @override
+  AppModel build() {
+    debugPrint("app model innitialized");
+    // initial default data for app
+    return AppModel(
+      name: 'Default Name',
+      age: 0,
+      appCommandHistory: AppCommandInvoker(),
+    );
+  }
+
+  void updateName(String name) {
+    state = state.copyWith(name: name);
+  }
+
+  void updateTool(ActiveTool activeTool) {
+    debugPrint("new Tool: $activeTool");
+    state = state.copyWith(activeTool: activeTool);
+  }
+
+  void updateAge(int age) {
+    state = state.copyWith(age: age);
+  }
+
+  String get name => state.name ?? 'Default Name';
+  int get age => state.age;
+  ActiveTool get activeTool => state.activeTool;
+}
+
+// the provider
+final appNotifier = NotifierProvider<AppNotifier, AppModel>(AppNotifier.new);

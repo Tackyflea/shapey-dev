@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'sections/StageWidget.dart';
+import 'sections/stage_widget.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 
 class MainStage extends StatefulWidget {

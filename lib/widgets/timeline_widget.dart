@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_notifier.dart';
-import 'package:shapey/widgets/timeline/LayerNameHeadingWidget.dart';
-import 'package:shapey/widgets/timeline/LayerNameWidget.dart';
-import 'package:shapey/utility/PanelWidget.dart';
-import 'package:shapey/utility/Utility.dart';
-import 'package:shapey/widgets/timeline/TimelineKeysWidget.dart';
+import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
+import 'package:shapey/widgets/timeline/layer_name_widget.dart';
+import 'package:shapey/utility/panel_widget.dart';
+import 'package:shapey/widgets/timeline/timeline_keys_widget.dart';
 
 const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 2,

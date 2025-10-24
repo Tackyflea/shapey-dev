@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_notifier.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
-import 'package:shapey/utility/PanelWidget.dart';
+import 'package:shapey/utility/panel_widget.dart';
 
 const verticalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 1,

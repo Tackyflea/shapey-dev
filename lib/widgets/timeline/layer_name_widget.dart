@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-//TODO: Figureout how to make the variables final and still be changed/ accessed externally
 class LayerName extends StatefulWidget {
   final String name;
-  bool visible;
-  bool locked;
-  LayerName({
+  final bool visible;
+  final bool locked;
+  const LayerName({
     super.key,
     required this.name,
     this.locked = false,
@@ -82,12 +80,9 @@ class _LayerNameState extends State<LayerName> {
       ),
     );
 
-    var lockAsset = const Image(
-      image: AssetImage('assets/images/icn_lock_black.png'),
-    );
-    var eyeAsset = const Image(
-      image: AssetImage('assets/images/icn_eye_black.png'),
-    );
+    // var lockAsset = const Image(
+    //   image: AssetImage('assets/images/icn_lock_black.png'),
+    // );
     double icnWidth = 15;
     var lockIcon = IconButton(
       iconSize: icnWidth,
