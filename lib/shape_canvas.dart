@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:keymap/keymap.dart';
+import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/drawy_commands.dart';
 import 'package:shapey/enums/e_active_tool.dart';
@@ -64,11 +65,16 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    var appData = ref.watch(appNotifier);
+    final ActiveTool activeTool = ref.watch(
+      appNotifier.select((s) => s.activeTool),
+    );
+    final AppCommandInvoker appCommandHistory = ref.watch(
+      appNotifier.select((s) => s.appCommandHistory),
+    );
     // tell drawy what mode we're on for performance
-    drawy.activeTool = appData.activeTool;
-    var penMode = appData.activeTool == ActiveTool.penTool;
-    var selectMode = appData.activeTool == ActiveTool.selectTool;
+    drawy.activeTool = activeTool;
+    var penMode = activeTool == ActiveTool.penTool;
+    var selectMode = activeTool == ActiveTool.selectTool;
 
     //RESIZED SHAPE CANVAS
     var sizedPaintWidget = CustomPaint(
@@ -97,12 +103,12 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       },
       onPanEnd: (details) {
         if (selectMode) {
-          appData.appCommandHistory.executeCommand(
+          appCommandHistory.executeCommand(
             DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
           );
         }
         if (penMode) {
-          appData.appCommandHistory.executeCommand(
+          appCommandHistory.executeCommand(
             DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
           );
         }
@@ -111,13 +117,12 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
       onPanCancel: () {
         if (selectMode) {
-          appData.appCommandHistory.executeCommand(
+          appCommandHistory.executeCommand(
             DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
           );
         }
         if (penMode) {
-          // print("EXEC CANCEL");
-          appData.appCommandHistory.executeCommand(
+          appCommandHistory.executeCommand(
             DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
           );
         }
@@ -140,7 +145,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
               ref.read(appNotifier.notifier).updateTool(ActiveTool.selectTool),
         ),
         KeyAction(LogicalKeyboardKey.keyZ, 'Undo', () {
-          appData.appCommandHistory.undo();
+          appCommandHistory.undo();
 
           _repaintNotifier.value = !_repaintNotifier.value;
         }, isControlPressed: true),

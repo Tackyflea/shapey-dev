@@ -6,7 +6,13 @@ import 'package:shapey/utility/drawy/e_interact_type.dart';
 class KeyVisual extends StatefulWidget {
   final int frameNumber;
   final double fps;
-  const KeyVisual({super.key, required this.frameNumber, required this.fps});
+  final ColorScheme colorScheme;
+  const KeyVisual({
+    super.key,
+    required this.frameNumber,
+    required this.fps,
+    required this.colorScheme,
+  });
 
   @override
   State<KeyVisual> createState() => _KeyVisualState();
@@ -38,30 +44,29 @@ class _KeyVisualState extends State<KeyVisual> {
       ),
     ];
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     Color outputColor;
     Border outputBorder = Border.all(
-      color: colorScheme.surfaceContainerHighest,
+      color: widget.colorScheme.surfaceContainerHighest,
       width: 1.0,
       style: BorderStyle.solid,
       strokeAlign: BorderSide.strokeAlignCenter,
     );
 
     Border boxBorderKeyed = Border.all(
-      color: colorScheme.tertiary,
+      color: widget.colorScheme.tertiary,
       width: 1.0,
       style: BorderStyle.solid,
       strokeAlign: BorderSide.strokeAlignInside,
     );
     Border boxBorderRollOvered = Border.all(
-      color: colorScheme.primary,
+      color: widget.colorScheme.primary,
       width: 1.0,
       style: BorderStyle.solid,
       strokeAlign: BorderSide.strokeAlignCenter,
     );
 
     Border boxBorderRollOverKeyed = Border.all(
-      color: colorScheme.primary,
+      color: widget.colorScheme.primary,
       width: 2.0,
       style: BorderStyle.solid,
       strokeAlign: BorderSide.strokeAlignCenter,
@@ -71,14 +76,14 @@ class _KeyVisualState extends State<KeyVisual> {
     final bool isWholeSecond = widget.frameNumber.toDouble() % widget.fps == 0;
     //custom color for second
     if (isWholeSecond) {
-      defaultColor = colorScheme.surfaceContainerHighest;
+      defaultColor = widget.colorScheme.surfaceContainerHighest;
     } else {
-      defaultColor = colorScheme.onSecondary;
+      defaultColor = widget.colorScheme.onSecondary;
     }
     outputColor = defaultColor;
     // default keyframed color
     if (keyed) {
-      outputColor = colorScheme.tertiaryFixed;
+      outputColor = widget.colorScheme.tertiaryFixed;
       outputBorder = boxBorderKeyed;
     }
     // roll over colors
@@ -86,11 +91,11 @@ class _KeyVisualState extends State<KeyVisual> {
         keyInteraction == KeyframeInteract.menuOpen) {
       // if its already keyed
       if (keyed) {
-        outputColor = colorScheme.tertiaryFixed.withAlpha(130);
+        outputColor = widget.colorScheme.tertiaryFixed.withAlpha(130);
         outputBorder = boxBorderRollOverKeyed;
       } else {
         // default rollover
-        outputColor = colorScheme.inversePrimary;
+        outputColor = widget.colorScheme.inversePrimary;
         outputBorder = boxBorderRollOvered;
       }
     }

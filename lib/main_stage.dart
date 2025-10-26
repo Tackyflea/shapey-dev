@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'sections/stage_widget.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
@@ -15,19 +18,21 @@ class _MainStageState extends State<MainStage> {
   @override
   Widget build(BuildContext context) {
     // Utility grab window size
-    Size windowSize = MediaQuery.of(context).size;
-    var padding = MediaQuery.of(context).padding;
+    MediaQueryData mediaQuery = MediaQuery.of(context);
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    // Normal layout
+    Size windowSize = mediaQuery.size;
+    var padding = mediaQuery.padding;
     double windowHeight =
         windowSize.height - padding.top - padding.bottom - (borderSize * 4);
     double windowWidth =
         windowSize.width - padding.left - padding.right - (borderSize * 4);
-
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceDim,
+      backgroundColor: colorScheme.surfaceDim,
       body: Center(
-        //https://pub.dev/documentation/flutter_layout_grid/latest/
         child: WindowBorder(
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          color: colorScheme.surfaceContainerLow,
           width: borderSize,
           child: Container(
             alignment: Alignment(0, 0),
@@ -39,7 +44,10 @@ class _MainStageState extends State<MainStage> {
                   width: windowWidth,
                   height: windowHeight,
                   alignment: Alignment(0, 0),
-                  child: StageWidget(windowSize: windowWidth),
+                  child: StageWidget(
+                    windowWidth: windowWidth,
+                    windowHeight: windowHeight,
+                  ),
                 ),
               ],
             ),

@@ -16,22 +16,26 @@ class TimelineWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Size windowSize = MediaQuery.of(context).size;
-    var padding = MediaQuery.of(context).padding;
-    double windowWidth = windowSize.width - padding.left - padding.right - 4;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final double titleBarHeight =
-        25; //todo, we dont need this, timelineHeight should already account for this , but doesnt yet
-    double layerViewWidth = 220;
-    double layerViewHeaderHeight = 25;
-    return PanelWidget(
-      name: "Timeline",
-      child: TimelineKeys(
-        layerViewWidth: layerViewWidth,
-        keysWidth: windowWidth - layerViewWidth,
-        height: timelineHeight - titleBarHeight,
-        headerHeight: layerViewHeaderHeight,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double windowWidth = constraints.maxWidth - 4;
+
+        const double titleBarHeight = 25;
+        const double layerViewWidth = 220;
+        const double layerViewHeaderHeight = 25;
+        return PanelWidget(
+          name: "Timeline",
+          child: TimelineKeys(
+            layerViewWidth: layerViewWidth,
+            keysWidth: windowWidth - layerViewWidth,
+            height: timelineHeight - titleBarHeight,
+            headerHeight: layerViewHeaderHeight,
+            colorScheme: colorScheme,
+          ),
+        );
+      },
     );
   }
 }

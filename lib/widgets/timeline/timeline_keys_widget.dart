@@ -11,19 +11,20 @@ class KeyVisualHeader extends StatelessWidget {
   final double fps;
   final double height;
   final double width;
+  final ColorScheme colorScheme;
   const KeyVisualHeader({
     super.key,
     required this.width,
     required this.height,
     required this.frameNumber,
     required this.fps,
+    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
     final horisontalMargin = width * 0.3;
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
     final boxBorder = Border.all(
       color: colorScheme.secondaryContainer,
@@ -38,35 +39,28 @@ class KeyVisualHeader extends StatelessWidget {
       return Column(
         children: [
           Expanded(
-            flex: 5,
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                width: double.infinity,
-                child: Text(
-                  textData,
-                  textAlign: TextAlign.center,
-                  softWrap: false,
-                  overflow: TextOverflow.visible,
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: textTheme.bodySmall?.fontSize,
-                  ),
+              child: Text(
+                textData,
+                textAlign: TextAlign.center,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: textTheme.bodySmall?.fontSize,
                 ),
               ),
             ),
           ),
           Expanded(
-            flex: 5,
             child: Container(
-              margin: EdgeInsets.fromLTRB(
-                horisontalMargin,
-                3,
-                horisontalMargin,
-                0,
+              margin: EdgeInsets.only(
+                left: horisontalMargin,
+                top: 3,
+                right: horisontalMargin,
               ),
-              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: colorScheme.primary,
                 border: boxBorder,
@@ -136,6 +130,7 @@ class TimelineKeys extends ConsumerStatefulWidget {
   final double height;
   final double headerHeight;
   final double layerViewWidth;
+  final ColorScheme colorScheme;
 
   const TimelineKeys({
     super.key,
@@ -144,6 +139,7 @@ class TimelineKeys extends ConsumerStatefulWidget {
     required this.height,
     required this.headerHeight,
     required this.layerViewWidth,
+    required this.colorScheme,
   });
   @override
   ConsumerState<TimelineKeys> createState() => _TimelineKeysState();
@@ -193,63 +189,62 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   @override
   Widget build(BuildContext context) {
+    // DateTime now = DateTime.now();
+    // print('TimelineKeys rebuild ${now.second}');
     var fileData = ref.read(fileNotifier.notifier);
     final double tlDuration = fileData.timelineDuration; //second
     final double tlFPS = fileData.fps; // frames per seconsd
+    final int layerCount = 14; // TEST layer count , TODO: Link it
+    final double layerHeight = 25; // height of a layer cell
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final totalFrames = (tlDuration * tlFPS).toInt();
-
-    final layerKeysList = Column(
-      // generate 5 rows
-      children: List.generate(
-        14,
-        (index) => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // LayerName(name: "a$index"),
-            TimelineKeyDetails(
-              isHeading: widget.isHeading,
-              fps: tlFPS,
-              size: gridObjectWidth,
-              frames: totalFrames,
-            ),
-          ],
+    final layerKeysList = SizedBox(
+      height: layerCount * layerHeight,
+      child: ListView.builder(
+        scrollDirection: Axis.vertical,
+        itemCount: layerCount, // for performance
+        itemExtent: layerHeight,
+        itemBuilder: (context, index) => TimelineKeyDetails(
+          colorScheme: widget.colorScheme,
+          isHeading: widget.isHeading,
+          fps: tlFPS,
+          keyWidth: gridObjectWidth,
+          keyHeight: layerHeight,
+          frames: totalFrames,
+          useExpanded: false,
         ),
       ),
     );
-    final layerNamesList = Column(
-      // generate 5 rows
-      children: List.generate(
-        14,
-        (index) => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [LayerName(name: "a$index")],
-        ),
+    final layerNamesList = SizedBox(
+      height: layerCount * layerHeight,
+      child: ListView.builder(
+        itemExtent: layerHeight, // for performance
+        itemCount: layerCount,
+        itemBuilder: (context, index) => LayerName(name: "a$index"),
       ),
     );
     final timelineLayers = KeyframesVerticalList(
       layerKeysList: layerKeysList,
       tlLayerViewScrollbar: tlLayerViewScrollbar,
     );
-
     final timelineHeader = Row(
       children: [
         TimelineLayerDetails(
-          // Left side heading with layer details
           width: widget.layerViewWidth,
           height: widget.headerHeight,
           scrollController: timelineVerticalScrollController,
         ),
         TimelineKeyDetails(
+          colorScheme: widget.colorScheme,
           isHeading: true,
           fps: tlFPS,
-          size: gridObjectWidth,
+          keyWidth: gridObjectWidth,
+          keyHeight: layerHeight,
           frames: totalFrames,
+          useExpanded: true, // ← Use Expanded in Row
         ),
       ],
     );
-
     // FOOTER
     double layerViewFooterHeight = 40;
     double keyframesHeight =
@@ -258,7 +253,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
         layerViewFooterHeight /
             2; // seems hacky to /2 , layerViewFooter height might be off
     final BorderSide tlLayerViewHeaderBorder = BorderSide(
-      color: colorScheme.primaryContainer,
+      color: widget.colorScheme.primaryContainer,
       width: 1.0,
     );
     final timelineFooter = Container(
@@ -266,14 +261,13 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       height: layerViewFooterHeight,
       alignment: Alignment.topLeft,
       decoration: BoxDecoration(
-        color: colorScheme.onPrimaryContainer,
+        color: widget.colorScheme.onPrimaryContainer,
         border: Border.all(
           color: tlLayerViewHeaderBorder.color,
           width: tlLayerViewHeaderBorder.width,
         ),
       ),
     );
-
     return Stack(
       children: [
         Positioned(

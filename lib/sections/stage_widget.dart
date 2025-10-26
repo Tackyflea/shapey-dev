@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/shape_canvas.dart';
-import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/sections/titlebar_widget.dart';
 import 'package:shapey/utility/touch_viewer_widget.dart';
+import 'package:shapey/widgets/active_tool_display_widget.dart';
 import 'package:shapey/widgets/properties_widget.dart';
 import 'package:shapey/widgets/timeline_widget.dart';
 import 'package:shapey/widgets/tools_widget.dart';
 
-class StageWidget extends ConsumerWidget {
-  final double windowSize;
-  const StageWidget({super.key, required this.windowSize});
+class StageWidget extends StatefulWidget {
+  final double windowWidth;
+  final double windowHeight;
+
+  const StageWidget({
+    super.key,
+    required this.windowWidth,
+    required this.windowHeight,
+  });
+  @override
+  State<StageWidget> createState() => _StageWidgetState();
+}
+
+class _StageWidgetState extends State<StageWidget> {
   // https://github.com/flutter/packages/tree/main/third_party/packages/flutter_svg
   // https://appsgemacht.de/en/insights/svg-vector-graphics-flutter
   // https://stackoverflow.com/questions/57874374/flutter-draw-svg-in-custompaint-canvas
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    var toolData = ref.watch(appNotifier);
+  Widget build(BuildContext _) {
     double sidePanelsY = 40;
     double titleBarSize = 25;
-    final TextTheme textTheme = Theme.of(context).textTheme;
 
     TouchViewer mainViewer = TouchViewer(
       child: SizedBox(
@@ -43,7 +52,7 @@ class StageWidget extends ConsumerWidget {
       left: 0.0,
       top: 0,
       child: Container(
-        width: windowSize,
+        width: widget.windowWidth,
         alignment: Alignment(0, 0),
         // color: Colors.red,
         child: TitleBar(titleBarHeight: 25),
@@ -81,29 +90,10 @@ class StageWidget extends ConsumerWidget {
       bottom: 0,
       left: 0,
       child: Container(
-        width: windowSize,
+        width: widget.windowWidth,
         height: 200,
         alignment: Alignment(1, 0),
         child: TimelineWidget(timelineHeight: 200),
-      ),
-    );
-    // the info box on whats selected
-    var infoDisplay = Positioned(
-      // text info
-      right: 20.0,
-      top: titleBarSize + 5.0,
-      child: IgnorePointer(
-        ignoring: true,
-        child: Text(
-          textAlign: TextAlign.right,
-          toolData.activeTool.shortName,
-
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.outline,
-            fontSize: textTheme.titleLarge?.fontSize,
-          ),
-        ),
       ),
     );
     // ref.read(scoreChangeNotifProvider.notifier).set(points);
@@ -111,7 +101,7 @@ class StageWidget extends ConsumerWidget {
     return Stack(
       children: [
         mainViewer,
-        infoDisplay,
+        ActiveToolDisplay(titleBarSize: titleBarSize),
         ToolsDisplay,
         PropertiesDisplay,
         titleBarDisplay,
