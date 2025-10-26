@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 //TODO: Figureout how to make the variables final and still be changed/ accessed externally
-class LayerNameHeading extends ConsumerWidget {
+class TimelineLayerDetails extends ConsumerWidget {
   final double width;
   final double height;
   final ScrollController scrollController;
-  const LayerNameHeading({
+  const TimelineLayerDetails({
     super.key,
     required this.width,
     required this.height,

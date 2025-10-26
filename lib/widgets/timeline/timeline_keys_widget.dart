@@ -1,160 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_context_menu/flutter_context_menu.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/file_model.dart';
-import 'package:shapey/utility/drawy/e_interact_type.dart';
+import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
-import 'package:shapey/widgets/timeline/timeline_keys_context_menu.dart';
-
-// generic key bg
-class KeyVisual extends StatefulWidget {
-  final int frameNumber;
-  final double fps;
-  const KeyVisual({super.key, required this.frameNumber, required this.fps});
-
-  @override
-  State<KeyVisual> createState() => _KeyVisualState();
-}
-
-double borderSize = 1;
-
-class _KeyVisualState extends State<KeyVisual> {
-  // passable back to the file setting .. somehow
-  bool keyed = false;
-
-  // to indicate current interation if any over keyframe
-  KeyframeInteract keyInteraction = KeyframeInteract.none;
-  @override
-  Widget build(BuildContext context) {
-    // the right click menu. It's made here so it gets context on what to enable
-    final rc_menu_keyframe = <ContextMenuEntry>[
-      MenuItem(
-        label: 'Add Keyframe',
-        icon: Icons.add,
-        enabled: !keyed,
-        value: "add",
-      ),
-      MenuItem(
-        label: 'Remove Keyframe',
-        icon: Icons.remove,
-        enabled: keyed,
-        value: "remove",
-      ),
-    ];
-
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    Color outputColor;
-    Border outputBorder = Border.all(
-      color: colorScheme.surfaceContainerHighest,
-      width: 1.0,
-      style: BorderStyle.solid,
-      strokeAlign: BorderSide.strokeAlignCenter,
-    );
-
-    Border boxBorderKeyed = Border.all(
-      color: colorScheme.tertiary,
-      width: 1.0,
-      style: BorderStyle.solid,
-      strokeAlign: BorderSide.strokeAlignInside,
-    );
-    Border boxBorderRollOvered = Border.all(
-      color: colorScheme.primary,
-      width: 1.0,
-      style: BorderStyle.solid,
-      strokeAlign: BorderSide.strokeAlignCenter,
-    );
-
-    Border boxBorderRollOverKeyed = Border.all(
-      color: colorScheme.primary,
-      width: 2.0,
-      style: BorderStyle.solid,
-      strokeAlign: BorderSide.strokeAlignCenter,
-    );
-
-    Color defaultColor;
-    final bool isWholeSecond = widget.frameNumber.toDouble() % widget.fps == 0;
-    //custom color for second
-    if (isWholeSecond) {
-      defaultColor = colorScheme.surfaceContainerHighest;
-    } else {
-      defaultColor = colorScheme.onSecondary;
-    }
-    outputColor = defaultColor;
-    // default keyframed color
-    if (keyed) {
-      outputColor = colorScheme.tertiaryFixed;
-      outputBorder = boxBorderKeyed;
-    }
-    // roll over colors
-    if (keyInteraction == KeyframeInteract.over ||
-        keyInteraction == KeyframeInteract.menuOpen) {
-      // if its already keyed
-      if (keyed) {
-        outputColor = colorScheme.tertiaryFixed.withAlpha(130);
-        outputBorder = boxBorderRollOverKeyed;
-      } else {
-        // default rollover
-        outputColor = colorScheme.inversePrimary;
-        outputBorder = boxBorderRollOvered;
-      }
-    }
-    return InkWell(
-      onSecondaryTapDown: (e) async {
-        // immediately mark menu is open
-        setState(() => (keyInteraction = KeyframeInteract.menuOpen));
-        // right click
-        final menu = ContextMenu(
-          entries: rc_menu_keyframe,
-          position: e.globalPosition,
-          padding: const EdgeInsets.all(8.0),
-        );
-
-        //WAIT until user picks something
-        final selectedValue = await ContextMenu(
-          entries: rc_menu_keyframe,
-          position: e.globalPosition,
-          padding: const EdgeInsets.all(8.0),
-        ).show(context);
-
-        // cancel operation if the whole thing gets dropped.
-        if (selectedValue == null) {
-          setState(() => (keyInteraction = KeyframeInteract.none));
-        }
-
-        // act on decision , if any
-        if (selectedValue == "add") {
-          setState(() {
-            keyed = true;
-            keyInteraction = KeyframeInteract.none;
-          });
-        }
-        if (selectedValue == "remove") {
-          setState(() {
-            keyed = false;
-            keyInteraction = KeyframeInteract.none;
-          });
-        }
-      },
-      onHover: (value) {
-        // print('roll over $value');
-        if (value) {
-          // roll over
-          setState(() => keyInteraction = KeyframeInteract.over);
-        } else {
-          // roll out
-          if (keyInteraction != KeyframeInteract.menuOpen) {
-            setState(() => (keyInteraction = KeyframeInteract.none));
-          }
-        }
-      },
-
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: outputColor, border: outputBorder),
-      ),
-    );
-  }
-}
+import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
 
 //  header bg
 class KeyVisualHeader extends StatelessWidget {
@@ -244,65 +93,106 @@ class KeyVisualHeader extends StatelessWidget {
   }
 }
 
-// creates a whole row of keys
-class TimelineRow extends StatelessWidget {
-  final bool? isHeading;
-  final double size;
-  final int frames;
-  final double fps;
-  const TimelineRow({
+class KeyframesVerticalList extends StatelessWidget {
+  final ScrollController tlLayerViewScrollbar;
+  final Widget layerKeysList;
+  const KeyframesVerticalList({
     super.key,
-    this.isHeading,
-    required this.size,
-    required this.frames,
-    required this.fps,
+    required this.tlLayerViewScrollbar,
+    required this.layerKeysList,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 25,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(
-            frames,
-            (index) => SizedBox(
-              width: size,
-              height: 25,
-              child: isHeading == null
-                  ? KeyVisual(frameNumber: index, fps: fps)
-                  : KeyVisualHeader(
-                      frameNumber: index,
-                      fps: fps,
-                      width: size,
-                      height: 25,
-                    ),
-            ),
-          ),
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(
+        context,
+      ).copyWith(scrollbars: false, overscroll: false),
+      child: RawScrollbar(
+        controller: tlLayerViewScrollbar,
+        trackVisibility: true,
+        interactive: true,
+        thickness: 10,
+        thumbVisibility: true,
+        thumbColor: Theme.of(context).colorScheme.onSecondary,
+        fadeDuration: Duration(milliseconds: 200),
+        trackRadius: Radius.circular(33),
+        trackColor: Theme.of(context).colorScheme.onPrimaryFixed,
+        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+        minThumbLength: 12,
+        shape: StadiumBorder(),
+        child: SingleChildScrollView(
+          controller: tlLayerViewScrollbar,
+          child: layerKeysList,
         ),
       ),
     );
   }
 }
 
-class TimelineKeys extends ConsumerWidget {
+class TimelineKeys extends ConsumerStatefulWidget {
   final bool? isHeading;
-  final double width;
+  final double keysWidth;
   final double height;
   final double headerHeight;
+  final double layerViewWidth;
+
   const TimelineKeys({
     super.key,
     this.isHeading,
-    required this.width,
+    required this.keysWidth,
     required this.height,
     required this.headerHeight,
+    required this.layerViewWidth,
   });
+  @override
+  ConsumerState<TimelineKeys> createState() => _TimelineKeysState();
+}
+
+class _TimelineKeysState extends ConsumerState<TimelineKeys> {
+  late final ScrollController tlLayerViewScrollbar;
+  late final ScrollController tlNameViewScrollbar;
+
+  late final ScrollController timelineVerticalScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    // for layer scrolling
+    tlLayerViewScrollbar = ScrollController();
+    tlNameViewScrollbar = ScrollController();
+    timelineVerticalScrollController = ScrollController();
+    tlLayerViewScrollbar.addListener(scrollLayersBasedOffKeys);
+    tlNameViewScrollbar.addListener(scrollLayersBasedOffNames);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    tlLayerViewScrollbar.removeListener(scrollLayersBasedOffKeys);
+    tlNameViewScrollbar.addListener(scrollLayersBasedOffNames);
+    tlLayerViewScrollbar.dispose();
+    tlNameViewScrollbar.dispose();
+    timelineVerticalScrollController.dispose();
+  }
+
+  // links the layer VERTICAL scrollbar with the keyframes VERTICAL scrollbar
+  void scrollLayersBasedOffKeys() {
+    if (tlLayerViewScrollbar.offset != tlNameViewScrollbar.offset) {
+      tlNameViewScrollbar.jumpTo(tlLayerViewScrollbar.offset);
+    }
+  }
+
+  void scrollLayersBasedOffNames() {
+    if (tlNameViewScrollbar.offset != tlLayerViewScrollbar.offset) {
+      tlLayerViewScrollbar.jumpTo(tlNameViewScrollbar.offset);
+    }
+  }
 
   final double gridObjectWidth = 8;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     var fileData = ref.read(fileNotifier.notifier);
     final double tlDuration = fileData.timelineDuration; //second
     final double tlFPS = fileData.fps; // frames per seconsd
@@ -310,52 +200,105 @@ class TimelineKeys extends ConsumerWidget {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final totalFrames = (tlDuration * tlFPS).toInt();
 
-    final layerBoxes = Column(
+    final layerKeysList = Column(
       // generate 5 rows
       children: List.generate(
-        5,
-        (index) => TimelineRow(
-          isHeading: isHeading,
+        14,
+        (index) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // LayerName(name: "a$index"),
+            TimelineKeyDetails(
+              isHeading: widget.isHeading,
+              fps: tlFPS,
+              size: gridObjectWidth,
+              frames: totalFrames,
+            ),
+          ],
+        ),
+      ),
+    );
+    final layerNamesList = Column(
+      // generate 5 rows
+      children: List.generate(
+        14,
+        (index) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [LayerName(name: "a$index")],
+        ),
+      ),
+    );
+    final timelineLayers = KeyframesVerticalList(
+      layerKeysList: layerKeysList,
+      tlLayerViewScrollbar: tlLayerViewScrollbar,
+    );
+
+    final timelineHeader = Row(
+      children: [
+        TimelineLayerDetails(
+          // Left side heading with layer details
+          width: widget.layerViewWidth,
+          height: widget.headerHeight,
+          scrollController: timelineVerticalScrollController,
+        ),
+        TimelineKeyDetails(
+          isHeading: true,
           fps: tlFPS,
           size: gridObjectWidth,
           frames: totalFrames,
         ),
-      ),
+      ],
     );
 
-    final keysWidget = Container(
+    // FOOTER
+    double layerViewFooterHeight = 40;
+    double keyframesHeight =
+        widget.height -
+        widget.headerHeight -
+        layerViewFooterHeight /
+            2; // seems hacky to /2 , layerViewFooter height might be off
+    final BorderSide tlLayerViewHeaderBorder = BorderSide(
+      color: colorScheme.primaryContainer,
+      width: 1.0,
+    );
+    final timelineFooter = Container(
+      width: widget.layerViewWidth,
+      height: layerViewFooterHeight,
       alignment: Alignment.topLeft,
-      width: width,
-      height: height - headerHeight,
-      color: colorScheme.surfaceContainerHighest,
-      child: layerBoxes,
+      decoration: BoxDecoration(
+        color: colorScheme.onPrimaryContainer,
+        border: Border.all(
+          color: tlLayerViewHeaderBorder.color,
+          width: tlLayerViewHeaderBorder.width,
+        ),
+      ),
     );
 
-    final headerWidget = Container(
-      height: headerHeight,
-      width: width,
-      color: colorScheme.secondaryContainer,
-      child: TimelineRow(
-        isHeading: true,
-        fps: tlFPS,
-        size: gridObjectWidth,
-        frames: totalFrames,
-      ),
-    );
-    return Positioned(
-      right: 0,
-      width: width,
-      height: height,
-      child: Stack(
-        children: [
-          Positioned(bottom: 0, left: 0, child: keysWidget),
-          Positioned(
-            top: 0,
-            left: 0,
-            child: Material(elevation: 3, child: headerWidget),
+    return Stack(
+      children: [
+        Positioned(
+          left: widget.layerViewWidth,
+          width: widget.keysWidth,
+          height: keyframesHeight,
+          child: timelineLayers,
+        ),
+        Positioned(
+          width: widget.layerViewWidth,
+          height: keyframesHeight,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              controller: tlNameViewScrollbar,
+              child: layerNamesList,
+            ),
           ),
-        ],
-      ),
+        ),
+        Material(elevation: 3, child: timelineHeader),
+        Positioned(bottom: 0, child: timelineFooter),
+      ],
     );
   }
 }

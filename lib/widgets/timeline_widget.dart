@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
-import 'package:shapey/widgets/timeline/layer_name_widget.dart';
 import 'package:shapey/utility/panel_widget.dart';
 import 'package:shapey/widgets/timeline/timeline_keys_widget.dart';
 
@@ -12,59 +10,12 @@ const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   mainAxisSpacing: 2,
 );
 
-class TimelineWidget extends ConsumerStatefulWidget {
+class TimelineWidget extends ConsumerWidget {
   final double timelineHeight;
   const TimelineWidget({super.key, required this.timelineHeight});
 
   @override
-  ConsumerState<TimelineWidget> createState() => _TimelineWidgetState();
-}
-
-class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
-  late final ScrollController tlLayerViewScrollbar;
-  late final ScrollController tlTimelineViewScrollbar;
-
-  @override
-  void initState() {
-    super.initState();
-    // for layer scrolling
-    tlLayerViewScrollbar = ScrollController();
-    // for timelineScrolling
-    tlTimelineViewScrollbar = ScrollController();
-
-    tlLayerViewScrollbar.addListener(layerScrollbarListener);
-    tlTimelineViewScrollbar.addListener(timelineScrollingListener);
-  }
-
-  // link the 2 scroll bars
-  void layerScrollbarListener() {
-    // if (tlLayerViewScrollbar.offset != tlTimelineViewScrollbar.offset) {
-    //   setState(() {
-    //     tlLayerViewScrollbar.jumpTo(tlTimelineViewScrollbar.offset);
-    //   });
-    // }
-  }
-
-  void timelineScrollingListener() {
-    if (tlTimelineViewScrollbar.offset != tlLayerViewScrollbar.offset) {
-      setState(() {
-        tlTimelineViewScrollbar.jumpTo(tlLayerViewScrollbar.offset);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    tlLayerViewScrollbar.dispose();
-    tlTimelineViewScrollbar.dispose();
-    tlLayerViewScrollbar.removeListener(layerScrollbarListener);
-    tlTimelineViewScrollbar.removeListener(timelineScrollingListener);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
     Size windowSize = MediaQuery.of(context).size;
     var padding = MediaQuery.of(context).padding;
     double windowWidth = windowSize.width - padding.left - padding.right - 4;
@@ -73,113 +24,13 @@ class _TimelineWidgetState extends ConsumerState<TimelineWidget> {
         25; //todo, we dont need this, timelineHeight should already account for this , but doesnt yet
     double layerViewWidth = 220;
     double layerViewHeaderHeight = 25;
-    double layerViewFooterHeight = 40;
-    final BorderSide tlLayerViewHeaderBorder = BorderSide(
-      color: colorScheme.primaryContainer,
-      width: 1.0,
-    );
-    final tlLayerViewFooter = Container(
-      width: layerViewWidth,
-      height: layerViewFooterHeight,
-      alignment: Alignment.bottomLeft,
-      decoration: BoxDecoration(
-        color: colorScheme.onPrimaryContainer,
-        border: Border.all(
-          color: tlLayerViewHeaderBorder.color,
-          width: tlLayerViewHeaderBorder.width,
-        ),
-      ),
-    );
-
-    // Controls all the layers
-    final tlLayerViewLayersColumn = Column(
-      children: [
-        LayerName(name: "sdfsd", locked: true),
-        LayerName(name: "sdfsdfsdfsd"),
-        LayerName(name: "sds"),
-        LayerName(name: "sdfsdfsdfsd", locked: true),
-        LayerName(name: "d", visible: false),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-        LayerName(name: "a"),
-      ],
-    );
-
-    // fancy scrolling wrapper around layers
-    final scrollableLayers = ScrollConfiguration(
-      behavior: ScrollConfiguration.of(
-        context,
-      ).copyWith(scrollbars: false, overscroll: false),
-      child: RawScrollbar(
-        controller: tlLayerViewScrollbar,
-        trackVisibility: true,
-        interactive: true,
-        thickness: 10,
-        thumbVisibility: true,
-        thumbColor: colorScheme.onSecondary,
-        fadeDuration: Duration(milliseconds: 200),
-        trackRadius: Radius.circular(33),
-        trackColor: colorScheme.onPrimaryFixed,
-        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-        minThumbLength: 12,
-        shape: StadiumBorder(),
-        child: SingleChildScrollView(
-          controller: tlLayerViewScrollbar,
-          child: tlLayerViewLayersColumn,
-        ),
-      ),
-    );
-
-    // LEFT SIDE LAYER VIEW
-    final tlLayerView = Positioned(
-      left: 0,
-      width: layerViewWidth,
-      height: widget.timelineHeight - titleBarHeight,
-      child: Material(
-        elevation: 1,
-        color: colorScheme.surfaceBright,
-        child: Stack(
-          children: [
-            Positioned(
-              top: layerViewHeaderHeight,
-              bottom: layerViewFooterHeight,
-              right: 0,
-              left: 0,
-              child: scrollableLayers,
-            ),
-            Material(
-              elevation: 3,
-              child: LayerNameHeading(
-                width: layerViewWidth,
-                height: layerViewHeaderHeight,
-                scrollController: tlTimelineViewScrollbar,
-              ),
-            ),
-            Positioned(bottom: 0, child: tlLayerViewFooter),
-          ],
-        ),
-      ),
-    );
-
     return PanelWidget(
       name: "Timeline",
-      child: Stack(
-        children: [
-          TimelineKeys(
-            width: windowWidth - layerViewWidth,
-            height: widget.timelineHeight - titleBarHeight,
-            headerHeight: layerViewHeaderHeight,
-          ),
-          tlLayerView,
-        ],
+      child: TimelineKeys(
+        layerViewWidth: layerViewWidth,
+        keysWidth: windowWidth - layerViewWidth,
+        height: timelineHeight - titleBarHeight,
+        headerHeight: layerViewHeaderHeight,
       ),
     );
   }
