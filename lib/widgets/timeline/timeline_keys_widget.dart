@@ -115,10 +115,7 @@ class KeyframesVerticalList extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
         minThumbLength: 12,
         shape: StadiumBorder(),
-        child: SingleChildScrollView(
-          controller: tlLayerViewScrollbar,
-          child: layerKeysList,
-        ),
+        child: layerKeysList,
       ),
     );
   }
@@ -189,8 +186,6 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   @override
   Widget build(BuildContext context) {
-    // DateTime now = DateTime.now();
-    // print('TimelineKeys rebuild ${now.second}');
     var fileData = ref.read(fileNotifier.notifier);
     final double tlDuration = fileData.timelineDuration; //second
     final double tlFPS = fileData.fps; // frames per seconsd
@@ -198,29 +193,34 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final double layerHeight = 25; // height of a layer cell
 
     final totalFrames = (tlDuration * tlFPS).toInt();
-    final layerKeysList = SizedBox(
-      height: layerCount * layerHeight,
-      child: ListView.builder(
-        scrollDirection: Axis.vertical,
-        itemCount: layerCount, // for performance
-        itemExtent: layerHeight,
-        itemBuilder: (context, index) => TimelineKeyDetails(
-          colorScheme: widget.colorScheme,
-          isHeading: widget.isHeading,
-          fps: tlFPS,
-          keyWidth: gridObjectWidth,
-          keyHeight: layerHeight,
-          frames: totalFrames,
-          useExpanded: false,
-        ),
+    final layerKeysList = ListView.builder(
+      scrollDirection: Axis.vertical,
+      itemCount: layerCount, // for performance
+      itemExtent: layerHeight,
+      controller: tlLayerViewScrollbar,
+      addRepaintBoundaries: true,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) => TimelineKeyDetails(
+        key: ValueKey("Row-Keys-$layerIndex"),
+        colorScheme: widget.colorScheme,
+        isHeading: widget.isHeading,
+        fps: tlFPS,
+        frames: totalFrames,
+        useExpanded: false,
+        layer: layerIndex,
       ),
     );
-    final layerNamesList = SizedBox(
-      height: layerCount * layerHeight,
-      child: ListView.builder(
-        itemExtent: layerHeight, // for performance
-        itemCount: layerCount,
-        itemBuilder: (context, index) => LayerName(name: "a$index"),
+    final layerNamesList = ListView.builder(
+      itemExtent: layerHeight, // for performance
+      itemCount: layerCount,
+
+      scrollDirection: Axis.vertical,
+      controller: tlNameViewScrollbar,
+      addRepaintBoundaries: true,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) => LayerName(
+        key: ValueKey("Row-LayerName-$layerIndex"),
+        name: "a$layerIndex",
       ),
     );
     final timelineLayers = KeyframesVerticalList(
@@ -238,9 +238,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
           colorScheme: widget.colorScheme,
           isHeading: true,
           fps: tlFPS,
-          keyWidth: gridObjectWidth,
-          keyHeight: layerHeight,
           frames: totalFrames,
+          layer: -1, // heading has no layer index
           useExpanded: true, // ← Use Expanded in Row
         ),
       ],
@@ -248,10 +247,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     // FOOTER
     double layerViewFooterHeight = 40;
     double keyframesHeight =
-        widget.height -
-        widget.headerHeight -
-        layerViewFooterHeight /
-            2; // seems hacky to /2 , layerViewFooter height might be off
+        widget.height - widget.headerHeight - layerViewFooterHeight;
     final BorderSide tlLayerViewHeaderBorder = BorderSide(
       color: widget.colorScheme.primaryContainer,
       width: 1.0,
@@ -271,23 +267,21 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     return Stack(
       children: [
         Positioned(
+          top: widget.headerHeight,
           left: widget.layerViewWidth,
           width: widget.keysWidth,
           height: keyframesHeight,
           child: timelineLayers,
         ),
         Positioned(
+          top: widget.headerHeight,
           width: widget.layerViewWidth,
           height: keyframesHeight,
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(
               context,
             ).copyWith(scrollbars: false),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              controller: tlNameViewScrollbar,
-              child: layerNamesList,
-            ),
+            child: layerNamesList,
           ),
         ),
         Material(elevation: 3, child: timelineHeader),
