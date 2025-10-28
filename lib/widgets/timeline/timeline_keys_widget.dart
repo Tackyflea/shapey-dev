@@ -5,88 +5,6 @@ import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
 import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
 
-//  header bg
-class KeyVisualHeader extends StatelessWidget {
-  final int frameNumber;
-  final double fps;
-  final double height;
-  final double width;
-  final ColorScheme colorScheme;
-  const KeyVisualHeader({
-    super.key,
-    required this.width,
-    required this.height,
-    required this.frameNumber,
-    required this.fps,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final horisontalMargin = width * 0.3;
-
-    final TextTheme textTheme = Theme.of(context).textTheme;
-    final boxBorder = Border.all(
-      color: colorScheme.secondaryContainer,
-      width: 1.0,
-      style: BorderStyle.solid,
-      strokeAlign: BorderSide.strokeAlignCenter,
-    );
-    final bool isWholeSecond = frameNumber.toDouble() % fps == 0;
-    //custom color for second
-    if (isWholeSecond) {
-      var textData = (frameNumber.toDouble() / fps).toInt().toString();
-      return Column(
-        children: [
-          Expanded(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Text(
-                textData,
-                textAlign: TextAlign.center,
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: textTheme.bodySmall?.fontSize,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(
-                left: horisontalMargin,
-                top: 3,
-                right: horisontalMargin,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                border: boxBorder,
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return Container(
-        margin: EdgeInsets.fromLTRB(
-          horisontalMargin,
-          height * 0.72,
-          horisontalMargin,
-          0,
-        ),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: colorScheme.tertiaryFixedDim,
-          border: boxBorder,
-        ),
-      );
-    }
-  }
-}
-
 class KeyframesVerticalList extends StatelessWidget {
   final ScrollController tlLayerViewScrollbar;
   final Widget layerKeysList;
@@ -195,19 +113,23 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final totalFrames = (tlDuration * tlFPS).toInt();
     final layerKeysList = ListView.builder(
       scrollDirection: Axis.vertical,
+      prototypeItem: SizedBox(
+        width: widget.layerViewWidth,
+        height: layerHeight,
+      ),
       itemCount: layerCount, // for performance
-      itemExtent: layerHeight,
       controller: tlLayerViewScrollbar,
-      addRepaintBoundaries: true,
+      addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,
-      itemBuilder: (context, layerIndex) => TimelineKeyDetails(
-        key: ValueKey("Row-Keys-$layerIndex"),
-        colorScheme: widget.colorScheme,
-        isHeading: widget.isHeading,
-        fps: tlFPS,
-        frames: totalFrames,
-        useExpanded: false,
-        layer: layerIndex,
+      itemBuilder: (context, layerIndex) => RepaintBoundary(
+        child: TimelineKeyDetails(
+          colorScheme: widget.colorScheme,
+          isHeading: widget.isHeading,
+          fps: tlFPS,
+          frames: totalFrames,
+          useExpanded: false,
+          layer: layerIndex,
+        ),
       ),
     );
     final layerNamesList = ListView.builder(
@@ -216,7 +138,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
       scrollDirection: Axis.vertical,
       controller: tlNameViewScrollbar,
-      addRepaintBoundaries: true,
+      addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,
       itemBuilder: (context, layerIndex) => LayerName(
         key: ValueKey("Row-LayerName-$layerIndex"),

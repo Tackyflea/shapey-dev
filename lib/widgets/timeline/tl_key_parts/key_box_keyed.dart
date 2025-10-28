@@ -12,30 +12,24 @@ class KeyBoxKeyed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context).colorScheme;
-    late final Color color;
-    late final Border borderBox;
+    final theme = Theme.of(context).colorScheme;
 
-    if (!isHovered) {
-      color = theme.tertiaryFixed;
+    final color = isHovered ? theme.tertiaryFixedDim : theme.tertiaryFixed;
+    final borderColor = isHovered ? theme.primary : theme.tertiary;
+    final borderWidth = isHovered ? 2.0 : 1.0;
+    final strokeAlign = isHovered
+        ? BorderSide.strokeAlignCenter
+        : BorderSide.strokeAlignInside;
 
-      borderBox = Border.all(
-        color: theme.tertiary,
-        width: 1.0,
-        style: BorderStyle.solid,
-        strokeAlign: BorderSide.strokeAlignInside,
-      );
-    } else {
-      color = theme.tertiaryFixedDim;
-      borderBox = Border.all(
-        color: theme.primary,
-        width: 2.0,
-        style: BorderStyle.solid,
-        strokeAlign: BorderSide.strokeAlignCenter,
-      );
-    }
     return DecoratedBox(
-      decoration: BoxDecoration(color: color, border: borderBox),
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(
+          color: borderColor,
+          width: borderWidth,
+          strokeAlign: strokeAlign,
+        ),
+      ),
     );
   }
 }

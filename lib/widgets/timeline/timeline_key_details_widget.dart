@@ -1,7 +1,10 @@
 // creates a whole row of keys
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shapey/widgets/timeline/tl_key_parts/tl_key.dart';
-import 'package:shapey/widgets/timeline/timeline_keys_widget.dart';
+
+import 'tl_headline_parts/tl_headline.dart';
 
 // creates a row for every timeline element including keys and headings (but not layers)
 class TimelineKeyDetails extends StatelessWidget {
@@ -27,40 +30,37 @@ class TimelineKeyDetails extends StatelessWidget {
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;
     final double keyHeight = 25;
+
     final child = Container(
       color: colorScheme.secondaryContainer,
       height: keyHeight,
       child: ListView.builder(
+        prototypeItem: SizedBox(width: keyWidth, height: keyHeight),
         scrollDirection: Axis.horizontal,
         itemCount: frames, // for performance
         addAutomaticKeepAlives: true,
-        itemExtent: keyWidth,
-        cacheExtent: 0,
+        cacheExtent: keyWidth * 20,
+        addRepaintBoundaries: false,
         itemBuilder: (context, cellIndex) {
-          final bool isWholeSecond = cellIndex.toDouble() % fps == 0;
-          ValueKey<String> valueKey = ValueKey('cell-$layer-$cellIndex');
+          final bool isWholeSecond = cellIndex % fps == 0;
 
           if (isHeading == null) {
             // normal keys
-            return RepaintBoundary(
-              child: TLKey(
-                key: valueKey,
-                frameNumber: cellIndex,
-                fps: fps,
-                isWholeSecond: isWholeSecond,
-              ),
+            return TLKey(
+              key: ValueKey<int>((layer << 20) + cellIndex),
+              frameNumber: cellIndex,
+              fps: fps,
+              isWholeSecond: isWholeSecond,
             );
           }
           // headline keys
-          return RepaintBoundary(
-            child: KeyVisualHeader(
-              key: valueKey,
-              colorScheme: colorScheme,
-              frameNumber: cellIndex,
-              fps: fps,
-              width: keyWidth,
-              height: keyHeight,
-            ),
+          return TLHeadline(
+            key: ValueKey<int>((layer << 20) + cellIndex),
+            colorScheme: colorScheme,
+            frameNumber: cellIndex,
+            fps: fps,
+            width: keyWidth,
+            height: keyHeight,
           );
         },
       ),
