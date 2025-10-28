@@ -113,10 +113,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final totalFrames = (tlDuration * tlFPS).toInt();
     final layerKeysList = ListView.builder(
       scrollDirection: Axis.vertical,
-      prototypeItem: SizedBox(
-        width: widget.layerViewWidth,
-        height: layerHeight,
-      ),
+      prototypeItem: SizedBox(height: layerHeight),
       itemCount: layerCount, // for performance
       controller: tlLayerViewScrollbar,
       addRepaintBoundaries: false,
@@ -133,9 +130,9 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       ),
     );
     final layerNamesList = ListView.builder(
-      itemExtent: layerHeight, // for performance
       itemCount: layerCount,
 
+      prototypeItem: SizedBox(height: layerHeight),
       scrollDirection: Axis.vertical,
       controller: tlNameViewScrollbar,
       addRepaintBoundaries: false,

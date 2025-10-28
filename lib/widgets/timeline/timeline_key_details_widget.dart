@@ -1,6 +1,4 @@
 // creates a whole row of keys
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:shapey/widgets/timeline/tl_key_parts/tl_key.dart';
 
@@ -35,7 +33,7 @@ class TimelineKeyDetails extends StatelessWidget {
       color: colorScheme.secondaryContainer,
       height: keyHeight,
       child: ListView.builder(
-        prototypeItem: SizedBox(width: keyWidth, height: keyHeight),
+        prototypeItem: SizedBox(width: keyWidth),
         scrollDirection: Axis.horizontal,
         itemCount: frames, // for performance
         addAutomaticKeepAlives: true,
