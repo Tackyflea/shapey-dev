@@ -14,7 +14,6 @@ class TimelineLayerDetails extends ConsumerWidget {
   });
 
   @override
-  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final BorderSide tlLayerViewHeaderBorder = BorderSide(
@@ -92,7 +91,6 @@ class TimelineLayerDetails extends ConsumerWidget {
             ],
           ),
         ),
-        Icon(color: fgColor, size: 18, Icons.delete),
       ],
     );
     return Container(

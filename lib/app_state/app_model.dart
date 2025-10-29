@@ -7,20 +7,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 class AppModel {
   const AppModel({
     this.name,
-    this.age = 0,
     this.activeTool = ActiveTool
         .penTool, // starting with pen tool just to make debugging faster
     required this.appCommandHistory,
   });
 
   final String? name;
-  final int age;
-  final ActiveTool activeTool;
+  final ActiveTool activeTool; // which tool the user last picked
   final AppCommandInvoker appCommandHistory;
   AppModel copyWith({String? name, int? age, ActiveTool? activeTool}) {
     return AppModel(
       name: name ?? this.name,
-      age: age ?? this.age,
       activeTool: activeTool ?? this.activeTool,
       appCommandHistory: appCommandHistory,
     );
@@ -34,7 +31,6 @@ class AppNotifier extends Notifier<AppModel> {
     // initial default data for app
     return AppModel(
       name: 'Default Name',
-      age: 0,
       appCommandHistory: AppCommandInvoker(),
     );
   }
@@ -48,12 +44,7 @@ class AppNotifier extends Notifier<AppModel> {
     state = state.copyWith(activeTool: activeTool);
   }
 
-  void updateAge(int age) {
-    state = state.copyWith(age: age);
-  }
-
   String get name => state.name ?? 'Default Name';
-  int get age => state.age;
   ActiveTool get activeTool => state.activeTool;
 }
 

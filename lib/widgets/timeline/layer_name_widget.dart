@@ -2,29 +2,31 @@ import 'package:flutter/material.dart';
 
 class LayerName extends StatefulWidget {
   final String name;
-  final bool visible;
+  final bool hidden;
   final bool locked;
   const LayerName({
     super.key,
     required this.name,
     this.locked = false,
-    this.visible = true,
+    this.hidden = false,
   });
   @override
   State<LayerName> createState() => _LayerNameState();
 }
 
 class _LayerNameState extends State<LayerName> {
-  late bool visible;
+  late bool hidden;
   late String name;
   late bool locked;
+  final FocusNode textFieldFocusNode = FocusNode();
+  bool canRename = false;
 
   late TextEditingController textEditController;
   @override
   void initState() {
     super.initState();
     name = widget.name;
-    visible = widget.visible;
+    hidden = widget.hidden;
     locked = widget.locked;
     textEditController = TextEditingController(text: name);
   }
@@ -32,6 +34,7 @@ class _LayerNameState extends State<LayerName> {
   @override
   void dispose() {
     textEditController.dispose();
+    textFieldFocusNode.dispose();
     super.dispose();
   }
 
@@ -42,7 +45,7 @@ class _LayerNameState extends State<LayerName> {
       name = widget.name;
       textEditController.text = name;
     }
-    if (oldWidget.visible != widget.visible) visible = widget.visible;
+    if (oldWidget.hidden != widget.hidden) hidden = widget.hidden;
     if (oldWidget.locked != widget.locked) locked = widget.locked;
   }
 
@@ -63,18 +66,35 @@ class _LayerNameState extends State<LayerName> {
       color: fgColor,
       fontSize: textTheme.bodySmall?.fontSize,
     );
+    var outputTextField = TextField(
+      focusNode: textFieldFocusNode,
+      enabled: canRename,
+      controller: textEditController,
+      style: layerTextStyle,
+      textAlignVertical: TextAlignVertical.center,
+      decoration: const InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 3),
+        border: InputBorder.none,
+      ),
+    );
     Flexible layerText = Flexible(
       child: SizedBox(
         height: 30,
-        child: TextField(
-          controller: textEditController,
-          // readOnly: !widget.textFieldEditable,
-          style: layerTextStyle,
-          textAlignVertical: TextAlignVertical.center,
-          decoration: const InputDecoration(
-            isDense: true,
-            contentPadding: EdgeInsets.fromLTRB(0, 0, 0, 3),
-            border: InputBorder.none,
+        child: Focus(
+          onFocusChange: (hasFocus) {
+            if (!hasFocus) {
+              setState(() => canRename = false);
+            }
+          },
+          child: InkWell(
+            onDoubleTap: () {
+              setState(() => canRename = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                textFieldFocusNode.requestFocus();
+              });
+            },
+            child: outputTextField,
           ),
         ),
       ),
@@ -103,12 +123,12 @@ class _LayerNameState extends State<LayerName> {
       padding: EdgeInsets.all(0),
       constraints: BoxConstraints(maxWidth: 18),
       alignment: Alignment.center,
-      icon: visible == true
+      icon: hidden == false
           ? Icon(color: fgColor, size: icnWidth, Icons.visibility_rounded)
           : Icon(color: fgColor, size: icnWidth, Icons.visibility_off_rounded),
       onPressed: () {
         setState(() {
-          visible = !visible;
+          hidden = !hidden;
         });
       },
     );

@@ -116,7 +116,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     FileModel fileData = ref.watch(fileNotifier);
     final double tlDuration = fileData.timelineDuration; //second
     final int tlFPS = fileData.fps; // frames per seconsd
-    final int layerCount = 14; // TEST layer count , TODO: Link it
+    final List<FileLayer> layers = fileData.layers;
     final double layerHeight = 25; // height of a layer cell
     final Image fpsImage = const Image(
       image: ResizeImage(
@@ -129,7 +129,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final layerKeysList = ListView.builder(
       scrollDirection: Axis.vertical,
       prototypeItem: SizedBox(height: layerHeight),
-      itemCount: layerCount, // for performance
+      itemCount: layers.length, // for performance
       controller: tlLayerViewScrollbar,
       addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,
@@ -145,7 +145,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       ),
     );
     final layerNamesList = ListView.builder(
-      itemCount: layerCount,
+      itemCount: layers.length,
 
       prototypeItem: SizedBox(height: layerHeight),
       scrollDirection: Axis.vertical,
@@ -154,7 +154,9 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       addAutomaticKeepAlives: true,
       itemBuilder: (context, layerIndex) => LayerName(
         key: ValueKey("Row-LayerName-$layerIndex"),
-        name: "a$layerIndex",
+        name: layers[layerIndex].LayerName,
+        locked: layers[layerIndex].locked,
+        hidden: layers[layerIndex].hidden,
       ),
     );
     final timelineLayers = KeyframesVerticalList(
@@ -191,21 +193,36 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       height: layerViewFooterHeight,
       decoration: BoxDecoration(color: widget.colorScheme.onPrimaryContainer),
       child: Padding(
-        padding: EdgeInsetsGeometry.only(right: 10),
+        padding: EdgeInsetsGeometry.only(right: 6),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
-          spacing: 30,
+          spacing: 22,
           children: [
+            IconButton(
+              onPressed: () {
+                print("pressed the remove button");
+              },
+              icon: Icon(
+                size: 18,
+                Icons.delete,
+                color: widget.colorScheme.onPrimary,
+              ),
+            ),
             TLFpsDisplay(
               fps: fileData.fps,
               size: Size(widget.layerViewWidth, layerViewFooterHeight),
               colorScheme: widget.colorScheme,
               fpsEditController: fpsConfirmTextEditController,
             ),
-            Icon(
-              color: widget.colorScheme.onPrimary,
-              size: 18,
-              Icons.add_to_photos_sharp,
+            IconButton(
+              onPressed: () {
+                print("pressed the add button");
+              },
+              icon: Icon(
+                size: 18,
+                Icons.add_to_photos_sharp,
+                color: widget.colorScheme.onPrimary,
+              ),
             ),
           ],
         ),
