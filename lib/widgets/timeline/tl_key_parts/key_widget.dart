@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'key_box_default.dart';
 import 'key_box_keyed.dart';
 
-class KeyWidgetInkwell extends StatelessWidget {
-  final GestureTapDownCallback? rightClickAction;
-  final ValueChanged<bool>? HoverAction;
+class KeyWidget extends StatelessWidget {
+  final GestureTapUpCallback? rightClickAction;
+  final PointerHoverEventListener? HoverAction;
+  final PointerExitEventListener? HoverEndAction;
   final bool isHovered;
   final bool isWholeSecond;
   final bool isKeyed;
-  const KeyWidgetInkwell({
+  const KeyWidget({
     super.key,
     required this.rightClickAction,
     required this.HoverAction,
+    required this.HoverEndAction,
     required this.isWholeSecond,
     required this.isHovered,
     required this.isKeyed,
@@ -33,10 +36,13 @@ class KeyWidgetInkwell extends StatelessWidget {
       );
     }
 
-    return InkWell(
-      onSecondaryTapDown: rightClickAction,
-      onHover: HoverAction,
-      child: boxToShow,
+    return GestureDetector(
+      onSecondaryTapUp: rightClickAction,
+      child: MouseRegion(
+        onHover: HoverAction,
+        onExit: HoverEndAction,
+        child: boxToShow,
+      ),
     );
   }
 }
