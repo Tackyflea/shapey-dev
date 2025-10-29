@@ -12,14 +12,10 @@ class FileModel {
   // Project file name
   final String fileName;
   // Project frame rate per seconds
-  final double fps;
+  final int fps;
   // file duration (seconds)
   final double timelineDuration;
-  FileModel copyWith({
-    String? fileName,
-    double? fps,
-    double? timelineDuration,
-  }) {
+  FileModel copyWith({String? fileName, int? fps, double? timelineDuration}) {
     return FileModel(
       fileName: fileName ?? this.fileName,
       fps: fps ?? this.fps,
@@ -37,12 +33,12 @@ class FileNotifier extends Notifier<FileModel> {
   }
 
   void setFileName(String name) => state = state.copyWith(fileName: name);
-  void setFPS(double fps) => state = state.copyWith(fps: fps);
+  void setFPS(int fps) => state = state.copyWith(fps: fps);
   void setTimelineDuration(double dur) =>
       state = state.copyWith(timelineDuration: dur);
 
   String get name => state.fileName;
-  double get fps => state.fps;
+  int get fps => state.fps;
   double get timelineDuration => state.timelineDuration;
 }
 

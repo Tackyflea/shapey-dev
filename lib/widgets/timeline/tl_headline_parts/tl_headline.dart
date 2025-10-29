@@ -6,7 +6,7 @@ import 'tl_headline_key_half_bar.dart';
 
 class TLHeadline extends StatelessWidget {
   final int frameNumber;
-  final double fps;
+  final int fps;
   final double height;
   final double width;
   final ColorScheme colorScheme;

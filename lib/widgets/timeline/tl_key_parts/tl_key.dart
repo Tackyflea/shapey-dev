@@ -9,7 +9,7 @@ import 'key_widget.dart';
 
 class TLKey extends StatefulWidget {
   final int frameNumber;
-  final double fps;
+  final int fps;
   final bool isWholeSecond;
 
   const TLKey({

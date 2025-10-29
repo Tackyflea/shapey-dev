@@ -9,7 +9,7 @@ class TimelineKeyDetails extends StatelessWidget {
   final bool? isHeading;
   final int frames;
   final int layer; // vertical layer number
-  final double fps;
+  final int fps;
   final bool useExpanded;
   final ColorScheme colorScheme;
   const TimelineKeyDetails({

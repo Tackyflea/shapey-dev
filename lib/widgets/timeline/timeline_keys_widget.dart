@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/file_model.dart';
+import 'package:shapey/main_stage.dart';
 import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
 import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
+import 'package:shapey/widgets/timeline/tl_left_side_parts/tl_fps_display.dart';
 
 class KeyframesVerticalList extends StatelessWidget {
   final ScrollController tlLayerViewScrollbar;
@@ -17,6 +19,7 @@ class KeyframesVerticalList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(
         context,
@@ -27,10 +30,10 @@ class KeyframesVerticalList extends StatelessWidget {
         interactive: true,
         thickness: 10,
         thumbVisibility: true,
-        thumbColor: Theme.of(context).colorScheme.onSecondary,
+        thumbColor: colorScheme.onSecondary,
         fadeDuration: Duration(milliseconds: 200),
         trackRadius: Radius.circular(33),
-        trackColor: Theme.of(context).colorScheme.onPrimaryFixed,
+        trackColor: colorScheme.onPrimaryFixed,
         padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
         minThumbLength: 12,
         shape: StadiumBorder(),
@@ -67,6 +70,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   late final ScrollController timelineVerticalScrollController;
 
+  late final TextEditingController fpsConfirmTextEditController;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +79,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     tlLayerViewScrollbar = ScrollController();
     tlNameViewScrollbar = ScrollController();
     timelineVerticalScrollController = ScrollController();
+    fpsConfirmTextEditController = TextEditingController();
+
     tlLayerViewScrollbar.addListener(scrollLayersBasedOffKeys);
     tlNameViewScrollbar.addListener(scrollLayersBasedOffNames);
   }
@@ -85,6 +92,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     tlNameViewScrollbar.addListener(scrollLayersBasedOffNames);
     tlLayerViewScrollbar.dispose();
     tlNameViewScrollbar.dispose();
+    fpsConfirmTextEditController.dispose();
     timelineVerticalScrollController.dispose();
   }
 
@@ -105,12 +113,18 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   @override
   Widget build(BuildContext context) {
-    var fileData = ref.read(fileNotifier.notifier);
+    FileModel fileData = ref.watch(fileNotifier);
     final double tlDuration = fileData.timelineDuration; //second
-    final double tlFPS = fileData.fps; // frames per seconsd
+    final int tlFPS = fileData.fps; // frames per seconsd
     final int layerCount = 14; // TEST layer count , TODO: Link it
     final double layerHeight = 25; // height of a layer cell
-
+    final Image fpsImage = const Image(
+      image: ResizeImage(
+        AssetImage('assets/images/icn_fps.png'),
+        width: 20,
+        height: 20,
+      ),
+    );
     final totalFrames = (tlDuration * tlFPS).toInt();
     final layerKeysList = ListView.builder(
       scrollDirection: Axis.vertical,
@@ -175,12 +189,25 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final timelineFooter = Container(
       width: widget.layerViewWidth,
       height: layerViewFooterHeight,
-      alignment: Alignment.topLeft,
-      decoration: BoxDecoration(
-        color: widget.colorScheme.onPrimaryContainer,
-        border: Border.all(
-          color: tlLayerViewHeaderBorder.color,
-          width: tlLayerViewHeaderBorder.width,
+      decoration: BoxDecoration(color: widget.colorScheme.onPrimaryContainer),
+      child: Padding(
+        padding: EdgeInsetsGeometry.only(right: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          spacing: 30,
+          children: [
+            TLFpsDisplay(
+              fps: fileData.fps,
+              size: Size(widget.layerViewWidth, layerViewFooterHeight),
+              colorScheme: widget.colorScheme,
+              fpsEditController: fpsConfirmTextEditController,
+            ),
+            Icon(
+              color: widget.colorScheme.onPrimary,
+              size: 18,
+              Icons.add_to_photos_sharp,
+            ),
+          ],
         ),
       ),
     );
