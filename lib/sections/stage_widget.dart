@@ -4,7 +4,7 @@ import 'package:shapey/sections/titlebar_widget.dart';
 import 'package:shapey/utility/touch_viewer_widget.dart';
 import 'package:shapey/widgets/active_tool_display_widget.dart';
 import 'package:shapey/widgets/properties_widget.dart';
-import 'package:shapey/widgets/timeline_widget.dart';
+import 'package:shapey/timeline.dart';
 import 'package:shapey/widgets/tools_widget.dart';
 
 class StageWidget extends StatefulWidget {

@@ -22,6 +22,7 @@ class FileModel {
     this.fps = 30,
     this.timelineDuration = 5.0,
     this.layers = const [],
+    this.layersHistory = const [],
   });
 
   // Project file name
@@ -30,6 +31,7 @@ class FileModel {
   final int fps;
   // file duration (seconds)
   final List<FileLayer> layers;
+  final List<List<FileLayer>> layersHistory;
   final double timelineDuration;
 
   FileModel copyWith({
@@ -37,12 +39,14 @@ class FileModel {
     int? fps,
     double? timelineDuration,
     List<FileLayer>? layers,
+    List<List<FileLayer>>? layersHistory,
   }) {
     return FileModel(
       fileName: fileName ?? this.fileName,
       fps: fps ?? this.fps,
       timelineDuration: timelineDuration ?? this.timelineDuration,
       layers: layers ?? this.layers,
+      layersHistory: layersHistory ?? this.layersHistory,
     );
   }
 }
@@ -65,15 +69,50 @@ class FileNotifier extends Notifier<FileModel> {
       state = state.copyWith(timelineDuration: dur);
 
   // add a new blank layer
-  void addLayer() {
-    var newLayer = FileLayer(LayerName: "Layer ${state.layers.length}");
-    final updatedLayers = [...state.layers, newLayer];
-    state = state.copyWith(layers: updatedLayers);
+  FileLayer addLayer({bool makeActive = true}) {
+    final current = state;
+    final newLayer = FileLayer(
+      LayerName: "Layer ${current.layers.length}",
+      active: makeActive,
+    );
+
+    final updatedLayers = [...current.layers, newLayer];
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
+    );
+    return newLayer;
   }
 
-  void removeLayer(FileLayer layer) {
-    final updatedLayers = state.layers.where((l) => l != layer).toList();
-    state = state.copyWith(layers: updatedLayers);
+  int removeLayer(FileLayer layer) {
+    final current = state;
+    final index = current.layers.indexOf(layer);
+    final updatedLayers = current.layers.where((l) => l != layer).toList();
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
+    );
+    return index;
+  }
+
+  // insert at index (records history)
+  void insertLayer(int index, FileLayer layer) {
+    final current = state;
+    final updatedLayers = [...current.layers]..insert(index, layer);
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
+    );
+  }
+
+  void restoreLayersWithoutHistory(List<FileLayer> layers) {
+    state = state.copyWith(layers: layers);
   }
 
   String get name => state.fileName;

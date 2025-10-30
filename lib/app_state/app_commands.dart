@@ -1,4 +1,5 @@
 import 'package:shapey/app_state/app_history.dart';
+import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart';
@@ -45,4 +46,47 @@ class DrawySelectCommand implements AppCommand {
 
   @override
   String getTitle() => 'select pen point at $newPosition';
+}
+
+class AddLayerCommand implements AppCommand {
+  final FileNotifier notifier;
+  late final List<FileLayer> _beforeLayers;
+
+  AddLayerCommand(this.notifier);
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    notifier.addLayer();
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => 'adding a blank layer';
+}
+
+class RemoveLayerCommand implements AppCommand {
+  final FileNotifier notifier;
+  final FileLayer layer;
+  late final List<FileLayer> _beforeLayers;
+
+  RemoveLayerCommand(this.notifier, this.layer);
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    notifier.removeLayer(layer); // normal remove (pushes history)
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => '${layer.LayerName} removing layer ';
 }

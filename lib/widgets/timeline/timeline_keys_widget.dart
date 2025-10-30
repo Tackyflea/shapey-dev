@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:keymap/keymap.dart';
+import 'package:shapey/app_state/app_commands.dart';
+import 'package:shapey/app_state/app_history.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/main_stage.dart';
+import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
 import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
@@ -16,7 +21,6 @@ class KeyframesVerticalList extends StatelessWidget {
     required this.tlLayerViewScrollbar,
     required this.layerKeysList,
   });
-
   @override
   Widget build(BuildContext context) {
     ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -60,6 +64,7 @@ class TimelineKeys extends ConsumerStatefulWidget {
     required this.layerViewWidth,
     required this.colorScheme,
   });
+
   @override
   ConsumerState<TimelineKeys> createState() => _TimelineKeysState();
 }
@@ -113,7 +118,13 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   @override
   Widget build(BuildContext context) {
+    final AppCommandInvoker appCommandHistory = ref.watch(
+      appNotifier.select((s) => s.appCommandHistory),
+    );
+
     FileModel fileData = ref.watch(fileNotifier);
+    final FileNotifier fileNotif = ref.read(fileNotifier.notifier);
+
     final double tlDuration = fileData.timelineDuration; //second
     final int tlFPS = fileData.fps; // frames per seconsd
     final List<FileLayer> layers = fileData.layers;
@@ -201,6 +212,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
             IconButton(
               onPressed: () {
                 print("pressed the remove button");
+                //TODO: Add the concept of ACTIVE layers
+                // ref.read(fileNotifier.notifier).removeLayer();
               },
               icon: Icon(
                 size: 18,
@@ -217,6 +230,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
             IconButton(
               onPressed: () {
                 print("pressed the add button");
+                appCommandHistory.executeCommand(AddLayerCommand(fileNotif));
               },
               icon: Icon(
                 size: 18,
@@ -228,7 +242,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
         ),
       ),
     );
-    return Stack(
+
+    var leftAndRightSideOfTimeline = Stack(
       children: [
         Positioned(
           top: widget.headerHeight,
@@ -251,6 +266,16 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
         Material(elevation: 3, child: timelineHeader),
         Positioned(bottom: 0, child: timelineFooter),
       ],
+    );
+    return KeyboardWidget(
+      // Undo / Redo
+      bindings: [
+        KeyAction(LogicalKeyboardKey.keyZ, 'Undo', () {
+          print('stage undo');
+          appCommandHistory.undo();
+        }, isControlPressed: true),
+      ],
+      child: leftAndRightSideOfTimeline,
     );
   }
 }

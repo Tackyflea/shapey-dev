@@ -13,7 +13,7 @@ class AppCommandInvoker {
   void executeCommand(AppCommand command) {
     command.execute();
     _commands.add(command);
-    // print("AppCommandInvoker: ADDED -> ${command.getTitle()}");
+    print("AppCommandInvoker: ADDED -> ${command.getTitle()}");
     // Clear redo stack when a new command is executed
     _undoneCommands.clear();
   }
@@ -23,7 +23,7 @@ class AppCommandInvoker {
     if (_commands.isNotEmpty) {
       // Remove the last command and undo it
       final lastCommand = _commands.removeLast();
-      // print("AppCommandInvoker: REMOVED -> ${lastCommand.getTitle()}");
+      print("AppCommandInvoker: REMOVED -> ${lastCommand.getTitle()}");
       lastCommand.undo();
       _undoneCommands.add(lastCommand); // Store it for redo
     }
