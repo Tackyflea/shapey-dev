@@ -44,6 +44,7 @@ dependencies:
   keymap: ^0.0.92
   bitsdojo_window: ^0.1.6
   flutter_context_menu: ^0.3.0
+  uuid: ^4.0.0
 
 dev_dependencies:
   flutter_test:

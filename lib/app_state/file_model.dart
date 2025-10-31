@@ -1,10 +1,13 @@
 // contrils the specific file's model
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
 
 class FileLayer {
+  // for raw tracking
+  String GUID = Uuid().v4();
   String LayerName;
   // active in mouse selection (ready for moving / deleting)
   bool active = false;
@@ -24,7 +27,6 @@ class FileModel {
     this.layers = const [],
     this.layersHistory = const [],
   });
-
   // Project file name
   final String fileName;
   // Project frame rate per seconds

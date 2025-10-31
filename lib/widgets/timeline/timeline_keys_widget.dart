@@ -6,12 +6,12 @@ import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
-import 'package:shapey/main_stage.dart';
-import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
 import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
 import 'package:shapey/widgets/timeline/tl_left_side_parts/tl_fps_display.dart';
+
+import 'tl_headline_parts/tl_headline.dart';
 
 class KeyframesVerticalList extends StatelessWidget {
   final ScrollController tlLayerViewScrollbar;
@@ -122,20 +122,12 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       appNotifier.select((s) => s.appCommandHistory),
     );
 
-    FileModel fileData = ref.watch(fileNotifier);
-    final FileNotifier fileNotif = ref.read(fileNotifier.notifier);
+    final FileModel fileNotif = ref.watch(fileNotifier);
+    final double tlDuration = fileNotif.timelineDuration;
+    final int tlFPS = fileNotif.fps;
 
-    final double tlDuration = fileData.timelineDuration; //second
-    final int tlFPS = fileData.fps; // frames per seconsd
-    final List<FileLayer> layers = fileData.layers;
+    final List<FileLayer> layers = fileNotif.layers;
     final double layerHeight = 25; // height of a layer cell
-    final Image fpsImage = const Image(
-      image: ResizeImage(
-        AssetImage('assets/images/icn_fps.png'),
-        width: 20,
-        height: 20,
-      ),
-    );
     final totalFrames = (tlDuration * tlFPS).toInt();
     final layerKeysList = ListView.builder(
       scrollDirection: Axis.vertical,
@@ -144,16 +136,18 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
       controller: tlLayerViewScrollbar,
       addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,
-      itemBuilder: (context, layerIndex) => RepaintBoundary(
-        child: TimelineKeyDetails(
-          colorScheme: widget.colorScheme,
-          isHeading: widget.isHeading,
+      itemBuilder: (context, layerIndex) {
+        final cs = widget.colorScheme;
+        final frames = totalFrames;
+        return TimelineKeyDetails(
+          key: ValueKey(layers[layerIndex].GUID),
+          colorScheme: cs,
           fps: tlFPS,
-          frames: totalFrames,
+          frames: frames,
           useExpanded: false,
           layer: layerIndex,
-        ),
-      ),
+        );
+      },
     );
     final layerNamesList = ListView.builder(
       itemCount: layers.length,
@@ -181,13 +175,10 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
           height: widget.headerHeight,
           scrollController: timelineVerticalScrollController,
         ),
-        TimelineKeyDetails(
+        TimelineHeadline(
           colorScheme: widget.colorScheme,
-          isHeading: true,
           fps: tlFPS,
           frames: totalFrames,
-          layer: -1, // heading has no layer index
-          useExpanded: true, // ← Use Expanded in Row
         ),
       ],
     );
@@ -195,10 +186,6 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     double layerViewFooterHeight = 40;
     double keyframesHeight =
         widget.height - widget.headerHeight - layerViewFooterHeight;
-    final BorderSide tlLayerViewHeaderBorder = BorderSide(
-      color: widget.colorScheme.primaryContainer,
-      width: 1.0,
-    );
     final timelineFooter = Container(
       width: widget.layerViewWidth,
       height: layerViewFooterHeight,
@@ -222,7 +209,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
               ),
             ),
             TLFpsDisplay(
-              fps: fileData.fps,
+              fps: tlFPS,
               size: Size(widget.layerViewWidth, layerViewFooterHeight),
               colorScheme: widget.colorScheme,
               fpsEditController: fpsConfirmTextEditController,
@@ -230,7 +217,8 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
             IconButton(
               onPressed: () {
                 print("pressed the add button");
-                appCommandHistory.executeCommand(AddLayerCommand(fileNotif));
+                final FileNotifier fileModel = ref.read(fileNotifier.notifier);
+                appCommandHistory.executeCommand(AddLayerCommand(fileModel));
               },
               icon: Icon(
                 size: 18,
