@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shapey/utility/box.dart';
 
 class KeyBoxKeyed extends StatelessWidget {
   final bool isWholeSecond;
@@ -22,7 +21,7 @@ class KeyBoxKeyed extends StatelessWidget {
         ? BorderSide.strokeAlignCenter
         : BorderSide.strokeAlignInside;
 
-    return Box(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: color,
         border: Border.all(

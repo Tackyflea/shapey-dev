@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shapey/utility/box.dart';
 
 class KeyBoxDefault extends StatelessWidget {
   final bool isWholeSecond;
@@ -22,7 +21,7 @@ class KeyBoxDefault extends StatelessWidget {
         ? theme.primary
         : theme.surfaceContainerHighest;
 
-    return Box(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: color,
         border: Border.all(color: borderColor, width: 1.0),
