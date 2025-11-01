@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/shape_canvas.dart';
 import 'package:shapey/sections/titlebar_widget.dart';
+import 'package:shapey/utility/stage_intents.dart';
 import 'package:shapey/utility/touch_viewer_widget.dart';
 import 'package:shapey/widgets/active_tool_display_widget.dart';
 import 'package:shapey/widgets/properties_widget.dart';
 import 'package:shapey/timeline.dart';
 import 'package:shapey/widgets/tools_widget.dart';
 
-class StageWidget extends StatefulWidget {
-  final double windowWidth;
-  final double windowHeight;
-
-  const StageWidget({
-    super.key,
-    required this.windowWidth,
-    required this.windowHeight,
-  });
+class StageWidget extends ConsumerStatefulWidget {
+  const StageWidget({super.key});
   @override
-  State<StageWidget> createState() => _StageWidgetState();
+  ConsumerState<StageWidget> createState() => _StageWidgetState();
 }
 
-class _StageWidgetState extends State<StageWidget> {
+class _StageWidgetState extends ConsumerState<StageWidget> {
   // https://github.com/flutter/packages/tree/main/third_party/packages/flutter_svg
   // https://appsgemacht.de/en/insights/svg-vector-graphics-flutter
   // https://stackoverflow.com/questions/57874374/flutter-draw-svg-in-custompaint-canvas
 
   @override
-  Widget build(BuildContext _) {
+  Widget build(BuildContext context) {
+    // Normal layout
     double sidePanelsY = 40;
     double titleBarSize = 25;
 
@@ -50,12 +47,14 @@ class _StageWidgetState extends State<StageWidget> {
     var titleBarDisplay = Positioned(
       // text info
       left: 0.0,
-      top: 0,
-      child: Container(
-        width: widget.windowWidth,
-        alignment: Alignment(0, 0),
-        // color: Colors.red,
-        child: TitleBar(titleBarHeight: 25),
+      right: 0,
+      child: LayoutBuilder(
+        builder: (context, c) {
+          return SizedBox(
+            width: c.maxWidth - 4,
+            child: const TitleBar(titleBarHeight: 25),
+          );
+        },
       ),
     );
 
@@ -89,24 +88,44 @@ class _StageWidgetState extends State<StageWidget> {
       // text info
       bottom: 0,
       left: 0,
-      child: Container(
-        width: widget.windowWidth,
-        height: 200,
-        alignment: Alignment(1, 0),
-        child: TimelineWidget(timelineHeight: 200),
+      right: 0,
+      child: FractionallySizedBox(
+        widthFactor: 1,
+        child: SizedBox(
+          height: 200,
+          child: TimelineWidget(timelineHeight: 200),
+        ),
       ),
     );
-    // ref.read(scoreChangeNotifProvider.notifier).set(points);
 
-    return Stack(
-      children: [
-        mainViewer,
-        ActiveToolDisplay(titleBarSize: titleBarSize),
-        ToolsDisplay,
-        PropertiesDisplay,
-        titleBarDisplay,
-        TimelineDisplay,
-      ],
+    final Map<Type, Action<Intent>> actionsMap = {
+      UndoIntent: UndoAction(ref),
+      ToolPenIntent: ToolPenAction(ref),
+      ToolSelectIntent: ToolSelectAction(ref),
+    };
+    // Undo and redo should trigger stage level actions
+    return Shortcuts(
+      shortcuts: const <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.keyZ, control: true): UndoIntent(),
+        SingleActivator(LogicalKeyboardKey.keyP): ToolPenIntent(),
+        SingleActivator(LogicalKeyboardKey.keyA): ToolSelectIntent(),
+      },
+      child: Actions(
+        actions: actionsMap,
+        child: FocusScope(
+          autofocus: true,
+          child: Stack(
+            children: [
+              mainViewer,
+              ActiveToolDisplay(titleBarSize: titleBarSize),
+              ToolsDisplay,
+              PropertiesDisplay,
+              titleBarDisplay,
+              TimelineDisplay,
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -5,14 +5,14 @@ import 'package:shapey/widgets/timeline/tl_key_parts/tl_key.dart';
 // creates a row for every timeline element including keys and headings (but not layers)
 class TimelineKeyDetails extends StatelessWidget {
   final int frames;
-  final int layer; // vertical layer number
+  final String layerGUID; // vertical layer number
   final int fps;
   final bool useExpanded;
   final ColorScheme colorScheme;
   const TimelineKeyDetails({
     super.key,
     required this.frames,
-    required this.layer,
+    required this.layerGUID,
     required this.fps,
     required this.colorScheme,
     this.useExpanded = false,
@@ -20,6 +20,7 @@ class TimelineKeyDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext _) {
+    // print("TimelineKeyDetails");
     // to reduce refreshing and since we know for now what the key sizes are gonna be, hard setting sizes
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;
@@ -32,15 +33,14 @@ class TimelineKeyDetails extends StatelessWidget {
         prototypeItem: SizedBox(width: keyWidth),
         scrollDirection: Axis.horizontal,
         itemCount: frames, // for performance
-        addAutomaticKeepAlives: true,
-        cacheExtent: keyWidth * 20,
-        addRepaintBoundaries: false,
+        // addAutomaticKeepAlives: true,
+        // addRepaintBoundaries: false,
         itemBuilder: (context, cellIndex) {
           final bool isWholeSecond = cellIndex % fps == 0;
 
           // normal keys
           return TLKey(
-            key: ValueKey<int>((layer << 20) + cellIndex),
+            key: ValueKey("${layerGUID}_$cellIndex"),
             frameNumber: cellIndex,
             fps: fps,
             isWholeSecond: isWholeSecond,

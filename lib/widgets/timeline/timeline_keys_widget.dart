@@ -41,6 +41,7 @@ class KeyframesVerticalList extends ConsumerWidget {
       prototypeItem: SizedBox(height: layerHeight),
       itemCount: layers.length, // for performance
       controller: tlLayerViewScrollbar,
+      cacheExtent: 1000,
       addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,
       itemBuilder: (context, layerIndex) {
@@ -52,7 +53,7 @@ class KeyframesVerticalList extends ConsumerWidget {
           fps: fps,
           frames: frames,
           useExpanded: false,
-          layer: layerIndex,
+          layerGUID: layers[layerIndex].GUID,
         );
       },
     );
@@ -80,7 +81,7 @@ class KeyframesVerticalList extends ConsumerWidget {
   }
 }
 
-/// The Layer Names on the left side, IE <Visible> <locked> <Layer name> list
+/// The Layer Names on the left side, IE Visible, locked, Layer name list
 class LayerNamesVerticalList extends ConsumerWidget {
   final ScrollController tlNameViewScrollbar;
   final double layerHeight;
@@ -112,7 +113,6 @@ class LayerNamesVerticalList extends ConsumerWidget {
         hidden: layers[layerIndex].hidden,
       ),
     );
-    ;
   }
 }
 
@@ -187,17 +187,18 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
 
   @override
   Widget build(BuildContext context) {
+    // print("TimelineKeysWidget");
     final AppCommandInvoker appCommandHistory = ref.watch(
       appNotifier.select((s) => s.appCommandHistory),
     );
     // this component DOESNT auto refresh, children do, if needed
-    final FileModel fileNotif = ref.read(fileNotifier);
-    final double tlDuration = fileNotif.timelineDuration;
-    final int tlFPS = fileNotif.fps;
+    final double tlDuration = ref.watch(
+      fileNotifier.select((s) => s.timelineDuration),
+    );
+    final int fps = ref.watch(fileNotifier.select((s) => s.fps));
 
-    final List<FileLayer> layers = fileNotif.layers;
     final double layerHeight = 25; // height of a layer cell
-    final totalFrames = (tlDuration * tlFPS).toInt();
+    final totalFrames = (tlDuration * fps).toInt();
     final layerNamesList = LayerNamesVerticalList(
       tlNameViewScrollbar: tlNameViewScrollbar,
       layerHeight: layerHeight,
@@ -215,7 +216,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
         ),
         TimelineHeadline(
           colorScheme: widget.colorScheme,
-          fps: tlFPS,
+          fps: fps,
           frames: totalFrames,
         ),
       ],
@@ -247,7 +248,6 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
               ),
             ),
             TLFpsDisplay(
-              fps: tlFPS,
               size: Size(widget.layerViewWidth, layerViewFooterHeight),
               colorScheme: widget.colorScheme,
               fpsEditController: fpsConfirmTextEditController,
@@ -293,15 +293,6 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
         Positioned(bottom: 0, child: timelineFooter),
       ],
     );
-    return KeyboardWidget(
-      // Undo / Redo
-      bindings: [
-        KeyAction(LogicalKeyboardKey.keyZ, 'Undo', () {
-          print('stage undo');
-          appCommandHistory.undo();
-        }, isControlPressed: true),
-      ],
-      child: leftAndRightSideOfTimeline,
-    );
+    return leftAndRightSideOfTimeline;
   }
 }

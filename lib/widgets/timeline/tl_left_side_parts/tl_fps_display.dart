@@ -7,14 +7,12 @@ import 'package:shapey/app_state/file_model.dart';
 class TLFpsDisplay extends ConsumerWidget {
   final Size size;
   final ColorScheme colorScheme;
-  final int fps;
   final TextEditingController fpsEditController;
 
   const TLFpsDisplay({
     super.key,
     required this.size,
     required this.colorScheme,
-    required this.fps,
     required this.fpsEditController,
   });
 
@@ -39,7 +37,7 @@ class TLFpsDisplay extends ConsumerWidget {
             controller: fpsEditController,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(hintText: "$fps fps"),
+            decoration: InputDecoration(),
           ),
           actions: <Widget>[
             TextButton(
@@ -68,6 +66,8 @@ class TLFpsDisplay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final int fps = ref.watch(fileNotifier.select((s) => s.fps));
+
     var btn = Container(
       width: size.width * 0.4,
       height: size.height * 0.65,

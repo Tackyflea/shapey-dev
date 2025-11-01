@@ -86,6 +86,7 @@ class _TLKeyState extends State<TLKey> {
 
   @override
   Widget build(BuildContext context) {
+    // print(" TLKey refreshed ");
     return KeyWidget(
       rightClickAction: rightClickAction,
       HoverAction: _onHover,

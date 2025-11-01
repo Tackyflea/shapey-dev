@@ -7,16 +7,24 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 class AppModel {
   const AppModel({
     this.name,
+    this.stateChange = 0,
     this.activeTool = ActiveTool
         .penTool, // starting with pen tool just to make debugging faster
     required this.appCommandHistory,
   });
 
   final String? name;
+  final int stateChange; // counters up to indicate a state changed
   final ActiveTool activeTool; // which tool the user last picked
   final AppCommandInvoker appCommandHistory;
-  AppModel copyWith({String? name, int? age, ActiveTool? activeTool}) {
+  AppModel copyWith({
+    int? stateChange,
+    String? name,
+    int? age,
+    ActiveTool? activeTool,
+  }) {
     return AppModel(
+      stateChange: stateChange ?? this.stateChange,
       name: name ?? this.name,
       activeTool: activeTool ?? this.activeTool,
       appCommandHistory: appCommandHistory,
@@ -46,6 +54,11 @@ class AppNotifier extends Notifier<AppModel> {
 
   String get name => state.name ?? 'Default Name';
   ActiveTool get activeTool => state.activeTool;
+  //TODO, IDK IF WE NEED STATE CHANGED,
+  // THIS IS PURELY SO WE REFRESH CANVAS ON UNDO. Might not need it.
+  void stateChanged() {
+    state = state.copyWith(stateChange: state.stateChange + 1);
+  }
 }
 
 // the provider

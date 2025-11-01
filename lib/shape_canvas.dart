@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hooks_riverpod/misc.dart';
 import 'package:keymap/keymap.dart';
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
@@ -9,6 +10,7 @@ import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
+import 'package:shapey/utility/stage_intents.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 // Todo: Implement this maybe https://github.com/Deatsilence/flutter-design-patterns?tab=readme-ov-file#momento
@@ -32,7 +34,6 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   Vector2 MousePosition = Vector2(0, 0);
 
   PictureInfo? pictureInfo;
-
   @override
   void initState() {
     squareStarSvg =
@@ -71,6 +72,18 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     final AppCommandInvoker appCommandHistory = ref.watch(
       appNotifier.select((s) => s.appCommandHistory),
     );
+
+    //Reloads the stage on state change
+    ref.listen(appNotifier.select((s) => s.stateChange), (prev, next) {
+      setState(() {
+        _repaintNotifier.value = !_repaintNotifier.value;
+      });
+    });
+
+    //This is ^ Only around since you're not directly listening to shape changes YET
+    //so like this is good final activeTool = ref.watch(appNotifier.select((s) => s.activeTool));
+    // TODO: Once we link shapes tolayers, ref.listen teh shapes, and kill .stateChange
+
     // tell drawy what mode we're on for performance
     drawy.activeTool = activeTool;
     var penMode = activeTool == ActiveTool.penTool;
@@ -130,28 +143,8 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       },
       child: sizedPaintWidget,
     );
-    return KeyboardWidget(
-      // Undo / Redo
-      bindings: [
-        KeyAction(
-          LogicalKeyboardKey.keyP,
-          'Pen Tool',
-          () => ref.read(appNotifier.notifier).updateTool(ActiveTool.penTool),
-        ),
-        KeyAction(
-          LogicalKeyboardKey.keyA,
-          'Select Tool',
-          () =>
-              ref.read(appNotifier.notifier).updateTool(ActiveTool.selectTool),
-        ),
-        KeyAction(LogicalKeyboardKey.keyZ, 'Undo', () {
-          appCommandHistory.undo();
 
-          _repaintNotifier.value = !_repaintNotifier.value;
-        }, isControlPressed: true),
-      ],
-      child: gestureDetectorWidget,
-    );
+    return gestureDetectorWidget;
   }
 }
 
