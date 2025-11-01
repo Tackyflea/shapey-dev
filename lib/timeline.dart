@@ -17,11 +17,13 @@ class TimelineWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    // This causes the entire rebuild / Refresh
+    // This also causes the listview elements to fully rebuild
     return LayoutBuilder(
       builder: (context, constraints) {
         final double windowWidth = constraints.maxWidth - 4;
 
+        // Confirmed: Refreshes on window size change: Yes
         const double titleBarHeight = 25;
         const double layerViewWidth = 220;
         const double layerViewHeaderHeight = 25;

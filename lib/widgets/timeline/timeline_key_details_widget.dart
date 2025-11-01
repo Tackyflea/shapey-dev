@@ -20,7 +20,6 @@ class TimelineKeyDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext _) {
-    // print("TimelineKeyDetails");
     // to reduce refreshing and since we know for now what the key sizes are gonna be, hard setting sizes
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;

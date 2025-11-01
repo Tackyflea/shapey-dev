@@ -16,6 +16,7 @@ class PanelWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Confirmed: Refreshes on window sizechange: Yes
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
     final BorderSide headerBorder = BorderSide(

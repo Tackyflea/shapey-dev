@@ -72,6 +72,7 @@ class FileNotifier extends Notifier<FileModel> {
 
   // add a new blank layer
   FileLayer addLayer({bool makeActive = true}) {
+    print("add layer");
     final current = state;
     final newLayer = FileLayer(
       LayerName: "Layer ${current.layers.length}",
