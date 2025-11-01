@@ -13,17 +13,50 @@ import 'package:shapey/widgets/timeline/tl_left_side_parts/tl_fps_display.dart';
 
 import 'tl_headline_parts/tl_headline.dart';
 
-class KeyframesVerticalList extends StatelessWidget {
+/// The keyframes on the right side of the timeline IE ||||||| x rows
+class KeyframesVerticalList extends ConsumerWidget {
   final ScrollController tlLayerViewScrollbar;
-  final Widget layerKeysList;
+  final double layerHeight;
   const KeyframesVerticalList({
     super.key,
+    required this.layerHeight,
     required this.tlLayerViewScrollbar,
-    required this.layerKeysList,
   });
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<FileLayer> layers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+    final double duration = ref.watch(
+      fileNotifier.select((s) => s.timelineDuration),
+    );
+    final int fps = ref.watch(fileNotifier.select((s) => s.fps));
+
     ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    final int totalFrames = (duration * fps).toInt();
+
+    final ListView layerKeysList = ListView.builder(
+      scrollDirection: Axis.vertical,
+      prototypeItem: SizedBox(height: layerHeight),
+      itemCount: layers.length, // for performance
+      controller: tlLayerViewScrollbar,
+      addRepaintBoundaries: false,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) {
+        final cs = colorScheme;
+        final frames = totalFrames;
+        return TimelineKeyDetails(
+          key: ValueKey(layers[layerIndex].GUID),
+          colorScheme: cs,
+          fps: fps,
+          frames: frames,
+          useExpanded: false,
+          layer: layerIndex,
+        );
+      },
+    );
+
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(
         context,
@@ -44,6 +77,42 @@ class KeyframesVerticalList extends StatelessWidget {
         child: layerKeysList,
       ),
     );
+  }
+}
+
+/// The Layer Names on the left side, IE <Visible> <locked> <Layer name> list
+class LayerNamesVerticalList extends ConsumerWidget {
+  final ScrollController tlNameViewScrollbar;
+  final double layerHeight;
+  const LayerNamesVerticalList({
+    super.key,
+    required this.tlNameViewScrollbar,
+    required this.layerHeight,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // ONLY listen to layer changes
+    final List<FileLayer> layers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+
+    return ListView.builder(
+      itemCount: layers.length,
+
+      prototypeItem: SizedBox(height: layerHeight),
+      scrollDirection: Axis.vertical,
+      controller: tlNameViewScrollbar,
+      addRepaintBoundaries: false,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) => LayerName(
+        key: ValueKey("Row-LayerName-$layerIndex"),
+        name: layers[layerIndex].LayerName,
+        locked: layers[layerIndex].locked,
+        hidden: layers[layerIndex].hidden,
+      ),
+    );
+    ;
   }
 }
 
@@ -121,52 +190,21 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
     final AppCommandInvoker appCommandHistory = ref.watch(
       appNotifier.select((s) => s.appCommandHistory),
     );
-
-    final FileModel fileNotif = ref.watch(fileNotifier);
+    // this component DOESNT auto refresh, children do, if needed
+    final FileModel fileNotif = ref.read(fileNotifier);
     final double tlDuration = fileNotif.timelineDuration;
     final int tlFPS = fileNotif.fps;
 
     final List<FileLayer> layers = fileNotif.layers;
     final double layerHeight = 25; // height of a layer cell
     final totalFrames = (tlDuration * tlFPS).toInt();
-    final layerKeysList = ListView.builder(
-      scrollDirection: Axis.vertical,
-      prototypeItem: SizedBox(height: layerHeight),
-      itemCount: layers.length, // for performance
-      controller: tlLayerViewScrollbar,
-      addRepaintBoundaries: false,
-      addAutomaticKeepAlives: true,
-      itemBuilder: (context, layerIndex) {
-        final cs = widget.colorScheme;
-        final frames = totalFrames;
-        return TimelineKeyDetails(
-          key: ValueKey(layers[layerIndex].GUID),
-          colorScheme: cs,
-          fps: tlFPS,
-          frames: frames,
-          useExpanded: false,
-          layer: layerIndex,
-        );
-      },
-    );
-    final layerNamesList = ListView.builder(
-      itemCount: layers.length,
-
-      prototypeItem: SizedBox(height: layerHeight),
-      scrollDirection: Axis.vertical,
-      controller: tlNameViewScrollbar,
-      addRepaintBoundaries: false,
-      addAutomaticKeepAlives: true,
-      itemBuilder: (context, layerIndex) => LayerName(
-        key: ValueKey("Row-LayerName-$layerIndex"),
-        name: layers[layerIndex].LayerName,
-        locked: layers[layerIndex].locked,
-        hidden: layers[layerIndex].hidden,
-      ),
+    final layerNamesList = LayerNamesVerticalList(
+      tlNameViewScrollbar: tlNameViewScrollbar,
+      layerHeight: layerHeight,
     );
     final timelineLayers = KeyframesVerticalList(
-      layerKeysList: layerKeysList,
       tlLayerViewScrollbar: tlLayerViewScrollbar,
+      layerHeight: layerHeight,
     );
     final timelineHeader = Row(
       children: [
@@ -216,7 +254,7 @@ class _TimelineKeysState extends ConsumerState<TimelineKeys> {
             ),
             IconButton(
               onPressed: () {
-                print("pressed the add button");
+                // print("pressed the add button");
                 final FileNotifier fileModel = ref.read(fileNotifier.notifier);
                 appCommandHistory.executeCommand(AddLayerCommand(fileModel));
               },
