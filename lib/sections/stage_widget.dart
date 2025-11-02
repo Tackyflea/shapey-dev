@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/shape_canvas.dart';
 import 'package:shapey/sections/titlebar_widget.dart';
 import 'package:shapey/utility/stage_intents.dart';
@@ -114,6 +115,18 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
         actions: actionsMap,
         child: FocusScope(
           autofocus: true,
+          onKeyEvent: (node, event) {
+            // Shift listerner
+            if (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
+                event.logicalKey == LogicalKeyboardKey.shiftRight) {
+              if (event is KeyDownEvent) {
+                ref.read(appNotifier.notifier).setShiftDown(true);
+              } else if (event is KeyUpEvent) {
+                ref.read(appNotifier.notifier).setShiftDown(false);
+              }
+            }
+            return KeyEventResult.ignored;
+          },
           child: Stack(
             children: [
               mainViewer,

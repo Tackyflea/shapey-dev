@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:keymap/keymap.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
@@ -48,12 +46,12 @@ class KeyframesVerticalList extends ConsumerWidget {
         final cs = colorScheme;
         final frames = totalFrames;
         return TimelineKeyDetails(
-          key: ValueKey(layers[layerIndex].GUID),
+          key: ValueKey(layers[layerIndex].guid()),
           colorScheme: cs,
           fps: fps,
           frames: frames,
           useExpanded: false,
-          layerGUID: layers[layerIndex].GUID,
+          layerGUID: layers[layerIndex].guid(),
         );
       },
     );
@@ -97,7 +95,6 @@ class LayerNamesVerticalList extends ConsumerWidget {
     final List<FileLayer> layers = ref.watch(
       fileNotifier.select((s) => s.layers),
     );
-
     return ListView.builder(
       itemCount: layers.length,
 
@@ -108,9 +105,7 @@ class LayerNamesVerticalList extends ConsumerWidget {
       addAutomaticKeepAlives: true,
       itemBuilder: (context, layerIndex) => LayerName(
         key: ValueKey("Row-LayerName-$layerIndex"),
-        name: layers[layerIndex].LayerName,
-        locked: layers[layerIndex].locked,
-        hidden: layers[layerIndex].hidden,
+        layer: layers[layerIndex],
       ),
     );
   }

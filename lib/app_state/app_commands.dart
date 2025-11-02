@@ -57,7 +57,9 @@ class AddLayerCommand implements AppCommand {
   @override
   void execute() {
     _beforeLayers = [...notifier.layers];
+    notifier.clearLayerMultiSelection();
     notifier.addLayer();
+    notifier.setMultiSelectActive(notifier.layers.last.guid(), true);
   }
 
   @override
@@ -67,6 +69,62 @@ class AddLayerCommand implements AppCommand {
 
   @override
   String getTitle() => 'adding a blank layer';
+}
+
+// Set the LAYER to be multi layer active // for shift selecting layers
+// if shift isn't down, you'll reset selection
+class SetMultiSelectActiveCommand implements AppCommand {
+  final FileNotifier notifier;
+  final String layerGUID;
+  final bool onOff;
+  final bool shiftDown;
+  late final List<FileLayer> _beforeLayers;
+
+  SetMultiSelectActiveCommand(
+    this.notifier,
+    this.layerGUID,
+    this.onOff,
+    this.shiftDown,
+  );
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    if (shiftDown == false) {
+      notifier.clearLayerMultiSelection();
+    }
+    notifier.setMultiSelectActive(layerGUID, onOff);
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => 'Toggling layer multiSelect $onOff';
+}
+
+// CLEAR all LAYER multi selection
+class ClearLayerMultiSelectionCommand implements AppCommand {
+  final FileNotifier notifier;
+  late final List<FileLayer> _beforeLayers;
+
+  ClearLayerMultiSelectionCommand(this.notifier);
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    notifier.clearLayerMultiSelection();
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => 'cleared all LAYER multi selection';
 }
 
 class RemoveLayerCommand implements AppCommand {
@@ -88,5 +146,5 @@ class RemoveLayerCommand implements AppCommand {
   }
 
   @override
-  String getTitle() => '${layer.LayerName} removing layer ';
+  String getTitle() => '${layer.name()} removing layer ';
 }

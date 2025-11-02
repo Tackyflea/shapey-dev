@@ -7,27 +7,35 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 class AppModel {
   const AppModel({
     this.name,
+    this.activeLayer,
     this.stateChange = 0,
     this.activeTool = ActiveTool
         .penTool, // starting with pen tool just to make debugging faster
+    this.isShiftDown = false,
     required this.appCommandHistory,
   });
 
   final String? name;
+  final String? activeLayer; // which layer the user last picked
   final int stateChange; // counters up to indicate a state changed
   final ActiveTool activeTool; // which tool the user last picked
   final AppCommandInvoker appCommandHistory;
+  final bool isShiftDown;
   AppModel copyWith({
     int? stateChange,
     String? name,
+    String? activeLayer,
     int? age,
     ActiveTool? activeTool,
+    bool? isShiftDown,
   }) {
     return AppModel(
-      stateChange: stateChange ?? this.stateChange,
       name: name ?? this.name,
+      activeLayer: activeLayer ?? this.activeLayer,
+      stateChange: stateChange ?? this.stateChange,
       activeTool: activeTool ?? this.activeTool,
       appCommandHistory: appCommandHistory,
+      isShiftDown: isShiftDown ?? this.isShiftDown,
     );
   }
 }
@@ -47,13 +55,23 @@ class AppNotifier extends Notifier<AppModel> {
     state = state.copyWith(name: name);
   }
 
+  void updateActiveLayer(String newGUID) {
+    state = state.copyWith(activeLayer: newGUID);
+  }
+
   void updateTool(ActiveTool activeTool) {
     debugPrint("new Tool: $activeTool");
     state = state.copyWith(activeTool: activeTool);
   }
 
+  void setShiftDown(bool value) {
+    state = state.copyWith(isShiftDown: value);
+  }
+
   String get name => state.name ?? 'Default Name';
   ActiveTool get activeTool => state.activeTool;
+  bool get isShiftDown => state.isShiftDown;
+  AppCommandInvoker get appCommandHistory => state.appCommandHistory;
   //TODO, IDK IF WE NEED STATE CHANGED,
   // THIS IS PURELY SO WE REFRESH CANVAS ON UNDO. Might not need it.
   void stateChanged() {

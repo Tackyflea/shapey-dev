@@ -5,18 +5,86 @@ import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
 
-class FileLayer {
+// individual keyframe data
+class Data {
+  List<DrawyPath>? drawPaths = [];
+}
+
+// Data for the frames, if any
+class FrameData {
+  // List of currently selected frames
+  List<int>? activeFrames = [];
+  // List of key frames and their data bound
+  Map<int, Data>? KeyFrames;
+  FrameData();
+}
+
+// Details on the individual layer
+class LayerData {
   // for raw tracking
-  String GUID = Uuid().v4();
+  String GUID;
   String LayerName;
   // active in mouse selection (ready for moving / deleting)
-  bool active = false;
+  bool MultiSelectActive;
   // locked in mouse selection (disable editing of contents)
-  bool locked = false;
+  bool locked;
   // visible in scene
-  bool hidden = false;
-  List<DrawyPath> drawPaths = [];
-  FileLayer({this.LayerName = "Unnamed Layer", this.active = false});
+  bool hidden;
+
+  LayerData({
+    String? guid,
+    String? layerName,
+    bool? multiSelectActive,
+    bool? locked,
+    bool? hidden,
+  }) : GUID = guid ?? Uuid().v4(),
+       LayerName = layerName ?? "Untitled",
+       MultiSelectActive = multiSelectActive ?? false,
+       locked = locked ?? false,
+       hidden = hidden ?? false;
+
+  // creates a new LayerData instance, optionally overriding any field
+  LayerData copyWith({
+    String? guid,
+    String? layerName,
+    bool? multiSelectActive,
+    bool? locked,
+    bool? hidden,
+  }) {
+    return LayerData(
+      guid: guid ?? GUID,
+      layerName: layerName ?? LayerName,
+      multiSelectActive: multiSelectActive ?? MultiSelectActive,
+      locked: locked ?? this.locked,
+      hidden: hidden ?? this.hidden,
+    );
+  }
+}
+
+class FileLayer {
+  LayerData layerData;
+  FrameData frameData;
+
+  FileLayer({LayerData? layerData, FrameData? frameData})
+    : layerData = layerData ?? LayerData(),
+      frameData = frameData ?? FrameData();
+
+  void setName(String newName) {
+    layerData.LayerName = newName;
+  }
+
+  String name() => layerData.LayerName;
+  String guid() => layerData.GUID;
+  bool isMultiSelectActive() => layerData.MultiSelectActive;
+  bool isLocked() => layerData.locked;
+  bool isHidden() => layerData.hidden;
+
+  FileLayer copyWith({LayerData? layerData, FrameData? frameData}) {
+    return FileLayer(
+      layerData: layerData ?? this.layerData,
+      frameData: frameData ?? this.frameData,
+    );
+  }
 }
 
 class FileModel {
@@ -58,10 +126,10 @@ class FileNotifier extends Notifier<FileModel> {
   FileModel build() {
     debugPrint("file model innitialized");
     // initial default data for app
-    return FileModel(
-      fileName: 'File1',
-      layers: [FileLayer(LayerName: "Layer 0", active: true)],
-    );
+    var startFileLayer = FileLayer();
+    startFileLayer.setName("Layer 0");
+    var newFile = FileModel(fileName: 'File1', layers: [startFileLayer]);
+    return newFile;
   }
 
   void setFileName(String name) => state = state.copyWith(fileName: name);
@@ -70,14 +138,43 @@ class FileNotifier extends Notifier<FileModel> {
   void setTimelineDuration(double dur) =>
       state = state.copyWith(timelineDuration: dur);
 
+  // toggles that this layer is multi selectable
+  void setMultiSelectActive(String layerGUID, bool onOff) {
+    final updatedLayers = state.layers.map((layer) {
+      if (layer.guid() == layerGUID) {
+        // create a new Layer object with updated data
+        return layer.copyWith(
+          layerData: layer.layerData.copyWith(multiSelectActive: onOff),
+        );
+      }
+      return layer; // keep as-is
+    }).toList();
+
+    state = state.copyWith(
+      layers: updatedLayers,
+      layersHistory: [...state.layersHistory, state.layers],
+    );
+  }
+
+  void clearLayerMultiSelection() {
+    final updatedLayers = state.layers.map((layer) {
+      return layer.copyWith(
+        layerData: layer.layerData.copyWith(multiSelectActive: false),
+      );
+    }).toList();
+
+    state = state.copyWith(
+      layers: updatedLayers,
+      layersHistory: [...state.layersHistory, state.layers],
+    );
+  }
+
   // add a new blank layer
-  FileLayer addLayer({bool makeActive = true}) {
+  FileLayer addLayer() {
     print("add layer");
     final current = state;
-    final newLayer = FileLayer(
-      LayerName: "Layer ${current.layers.length}",
-      active: makeActive,
-    );
+    final newLayer = FileLayer();
+    newLayer.setName("Layer ${current.layers.length}");
 
     final updatedLayers = [...current.layers, newLayer];
     final updatedHistory = [...current.layersHistory, current.layers];

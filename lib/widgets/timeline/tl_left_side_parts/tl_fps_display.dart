@@ -67,7 +67,6 @@ class TLFpsDisplay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final int fps = ref.watch(fileNotifier.select((s) => s.fps));
-
     var btn = Container(
       width: size.width * 0.4,
       height: size.height * 0.65,
