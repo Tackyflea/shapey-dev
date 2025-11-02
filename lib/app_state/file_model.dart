@@ -73,6 +73,10 @@ class FileLayer {
     layerData.LayerName = newName;
   }
 
+  void setMultiSelect(bool onOff) {
+    layerData.MultiSelectActive = onOff;
+  }
+
   String name() => layerData.LayerName;
   String guid() => layerData.GUID;
   bool isMultiSelectActive() => layerData.MultiSelectActive;
@@ -128,6 +132,7 @@ class FileNotifier extends Notifier<FileModel> {
     // initial default data for app
     var startFileLayer = FileLayer();
     startFileLayer.setName("Layer 0");
+    startFileLayer.setMultiSelect(true);
     var newFile = FileModel(fileName: 'File1', layers: [startFileLayer]);
     return newFile;
   }
