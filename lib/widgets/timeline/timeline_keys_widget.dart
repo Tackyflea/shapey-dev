@@ -50,7 +50,6 @@ class KeyframesVerticalList extends ConsumerWidget {
           colorScheme: cs,
           fps: fps,
           frames: frames,
-          useExpanded: false,
           layerGUID: layers[layerIndex].guid(),
         );
       },
@@ -100,6 +99,7 @@ class LayerNamesVerticalList extends ConsumerWidget {
 
       prototypeItem: SizedBox(height: layerHeight),
       scrollDirection: Axis.vertical,
+      cacheExtent: 500 * layerHeight,
       controller: tlNameViewScrollbar,
       addRepaintBoundaries: false,
       addAutomaticKeepAlives: true,

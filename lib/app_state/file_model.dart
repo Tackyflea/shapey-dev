@@ -95,7 +95,7 @@ class FileModel {
   const FileModel({
     this.fileName = "File1",
     this.fps = 30,
-    this.timelineDuration = 5.0,
+    this.timelineDuration = 1.0,
     this.layers = const [],
     this.layersHistory = const [],
   });

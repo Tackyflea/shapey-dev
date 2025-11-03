@@ -25,7 +25,10 @@ class TLKey extends StatefulWidget {
 
 const double borderSize = 1;
 
-class _TLKeyState extends State<TLKey> {
+class _TLKeyState extends State<TLKey> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool keyed = false;
   KeyframeInteract keyInteraction = KeyframeInteract.none;
   void rightClickAction(TapUpDetails details) async {
@@ -86,6 +89,7 @@ class _TLKeyState extends State<TLKey> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // print(" TLKey refreshed ");
     return KeyWidget(
       rightClickAction: rightClickAction,

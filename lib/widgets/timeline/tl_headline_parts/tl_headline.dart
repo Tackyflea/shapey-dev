@@ -30,19 +30,20 @@ class TimelineHeadline extends StatelessWidget {
         prototypeItem: SizedBox(width: keyWidth),
         scrollDirection: Axis.horizontal,
         itemCount: frames, // for performance
-        addAutomaticKeepAlives: true,
-        cacheExtent: keyWidth * 20,
-        addRepaintBoundaries: false,
+
+        cacheExtent: 500 * keyWidth,
         itemBuilder: (context, frameNumber) {
           final bool isWholeSecond = frameNumber.toDouble() % fps == 0;
           if (isWholeSecond) {
             var textData = (frameNumber.toDouble() / fps).toInt().toString();
             return TLHeadlineKeyBar(
+              key: ValueKey("headerKey_$frameNumber"),
               horisontalMargin: horisontalMargin,
               barText: textData,
             );
           } else {
             return TLHeadlineKeyHalfBar(
+              key: ValueKey("headerKey_$frameNumber"),
               horisontalMargin: horisontalMargin,
               barHeight: halfKeyHeight,
             );
