@@ -5,6 +5,10 @@ import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
 
+//TODO ,send this to a physical file
+const int DEFAULT_FPS = 30;
+const double DEFAULT_TIMELINE_DURATION = 5.0;
+
 // individual keyframe data
 class Data {
   List<DrawyPath>? drawPaths = [];
@@ -14,9 +18,28 @@ class Data {
 class FrameData {
   // List of currently selected frames
   List<int>? activeFrames = [];
+  int frameCount = 0;
   // List of key frames and their data bound
-  Map<int, Data>? KeyFrames;
-  FrameData();
+  Map<int, Data>? keyFrames;
+  FrameData({
+    List<int>? activeFrames,
+    int? frameCount,
+    Map<int, Data>? keyFrames,
+  }) : activeFrames = activeFrames ?? [],
+       frameCount = frameCount ?? 0,
+       keyFrames = keyFrames ?? {};
+
+  FrameData copyWith({
+    List<int>? activeFrames,
+    int? frameCount,
+    Map<int, Data>? keyFrames,
+  }) {
+    return FrameData(
+      activeFrames: activeFrames ?? this.activeFrames,
+      frameCount: frameCount ?? this.frameCount,
+      keyFrames: keyFrames ?? this.keyFrames,
+    );
+  }
 }
 
 // Details on the individual layer
@@ -82,6 +105,7 @@ class FileLayer {
   bool isMultiSelectActive() => layerData.MultiSelectActive;
   bool isLocked() => layerData.locked;
   bool isHidden() => layerData.hidden;
+  int frameCount() => frameData.frameCount;
 
   FileLayer copyWith({LayerData? layerData, FrameData? frameData}) {
     return FileLayer(
@@ -89,13 +113,33 @@ class FileLayer {
       frameData: frameData ?? this.frameData,
     );
   }
+
+  // Immutable, keeps history
+  void setFrameCount(int newCount) {
+    frameData = frameData.copyWith(frameCount: newCount);
+  }
+
+  // Adds a keyframe at the given frame index
+  void addKeyFrame(int frameIndex) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
+    // For now, the Data can just be empty
+    newKeyFrames[frameIndex] = Data();
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
+  }
+
+  // Removes a keyframe at the given frame index
+  void removeKeyFrame(int frameIndex) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
+    newKeyFrames.remove(frameIndex);
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
+  }
 }
 
 class FileModel {
   const FileModel({
     this.fileName = "File1",
-    this.fps = 30,
-    this.timelineDuration = 1.0,
+    this.fps = DEFAULT_FPS,
+    this.timelineDuration = DEFAULT_TIMELINE_DURATION,
     this.layers = const [],
     this.layersHistory = const [],
   });
@@ -133,7 +177,12 @@ class FileNotifier extends Notifier<FileModel> {
     var startFileLayer = FileLayer();
     startFileLayer.setName("Layer 0");
     startFileLayer.setMultiSelect(true);
+    startFileLayer.setFrameCount(
+      (DEFAULT_FPS * DEFAULT_TIMELINE_DURATION).toInt(),
+    );
+
     var newFile = FileModel(fileName: 'File1', layers: [startFileLayer]);
+
     return newFile;
   }
 
@@ -180,6 +229,7 @@ class FileNotifier extends Notifier<FileModel> {
     final current = state;
     final newLayer = FileLayer();
     newLayer.setName("Layer ${current.layers.length}");
+    newLayer.setFrameCount((DEFAULT_FPS * DEFAULT_TIMELINE_DURATION).toInt());
 
     final updatedLayers = [...current.layers, newLayer];
     final updatedHistory = [...current.layersHistory, current.layers];

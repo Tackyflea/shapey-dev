@@ -6,7 +6,7 @@ import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/widgets/timeline/layer_name_heading_widget.dart';
 import 'package:shapey/widgets/timeline/layer_name_widget.dart';
-import 'package:shapey/widgets/timeline/timeline_key_details_widget.dart';
+import 'package:shapey/widgets/timeline/timeline_layer_keys.dart';
 import 'package:shapey/widgets/timeline/tl_left_side_parts/tl_fps_display.dart';
 
 import 'tl_headline_parts/tl_headline.dart';
@@ -45,12 +45,12 @@ class KeyframesVerticalList extends ConsumerWidget {
       itemBuilder: (context, layerIndex) {
         final cs = colorScheme;
         final frames = totalFrames;
-        return TimelineKeyDetails(
+        return TimelineLayerKeys(
           key: ValueKey(layers[layerIndex].guid()),
+          layer: layers[layerIndex],
           colorScheme: cs,
           fps: fps,
           frames: frames,
-          layerGUID: layers[layerIndex].guid(),
         );
       },
     );
