@@ -148,3 +148,49 @@ class RemoveLayerCommand implements AppCommand {
   @override
   String getTitle() => '${layer.name()} removing layer ';
 }
+
+class AddKeyFramesCommand implements AppCommand {
+  final FileNotifier notifier;
+  final FileLayer layer;
+  final List<int> keyFrames;
+  late final List<FileLayer> _beforeLayers;
+
+  AddKeyFramesCommand(this.notifier, this.layer, this.keyFrames);
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    notifier.addKeyFrames(layer, keyFrames);
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => '${layer.name()} adding keyframes';
+}
+
+class RemoveKeyFramesCommand implements AppCommand {
+  final FileNotifier notifier;
+  final FileLayer layer;
+  final List<int> keyFrames;
+  late final List<FileLayer> _beforeLayers;
+
+  RemoveKeyFramesCommand(this.notifier, this.layer, this.keyFrames);
+
+  @override
+  void execute() {
+    _beforeLayers = [...notifier.layers];
+    notifier.removeKeyFrames(layer, keyFrames);
+  }
+
+  @override
+  void undo() {
+    notifier.restoreLayersWithoutHistory(_beforeLayers);
+  }
+
+  @override
+  String getTitle() => '${layer.name()} removing keyframes';
+}

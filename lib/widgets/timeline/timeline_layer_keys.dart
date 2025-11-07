@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_context_menu/flutter_context_menu.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
@@ -97,6 +98,78 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
     dragDownStarted = false;
   }
 
+  Future<void> rightClickAction(TapUpDetails event) async {
+    secondaryActionActive = true;
+    // Right Click action
+    // clear duplicates
+    Set<int> toSet = HighlightedKeys.toSet();
+    HighlightedKeys = toSet.toList();
+
+    // so we know if we should allow adding keyframes
+    bool allFramesHaveKeyFrames = true;
+    bool anyOfTheFramesHaveKeyframe = false;
+    for (int index in HighlightedKeys) {
+      var notKeyframed = widget.layer.frameData.keyFrames?[index] == null;
+      if (notKeyframed) {
+        allFramesHaveKeyFrames = false;
+      } else {
+        anyOfTheFramesHaveKeyframe = true;
+      }
+    }
+
+    var rightClickMenu = <ContextMenuEntry>[
+      MenuItem(
+        label: 'Add Keyframe',
+        icon: Icons.add,
+        enabled: !allFramesHaveKeyFrames,
+        value: "add",
+      ),
+      MenuItem(
+        label: 'Remove Keyframe',
+        icon: Icons.remove,
+        enabled: anyOfTheFramesHaveKeyframe,
+        value: "remove",
+      ),
+    ];
+
+    final selectedValue = await ContextMenu(
+      entries: rightClickMenu,
+      position: event.globalPosition,
+      padding: const EdgeInsets.all(8.0),
+    ).show(context);
+
+    if (selectedValue == "add") {
+      setState(() {
+        secondaryActionActive = false;
+        // print("pressed the add button");
+        ref
+            .read(appNotifier.select((s) => s.appCommandHistory))
+            .executeCommand(
+              AddKeyFramesCommand(
+                ref.read(fileNotifier.notifier),
+                widget.layer,
+                HighlightedKeys,
+              ),
+            );
+      });
+      HighlightedKeys.clear();
+    } else if (selectedValue == "remove") {
+      setState(() {
+        ref
+            .read(appNotifier.select((s) => s.appCommandHistory))
+            .executeCommand(
+              RemoveKeyFramesCommand(
+                ref.read(fileNotifier.notifier),
+                widget.layer,
+                HighlightedKeys,
+              ),
+            );
+      });
+      HighlightedKeys.clear();
+    }
+    secondaryActionActive = false;
+  }
+
   @override
   Widget build(BuildContext _) {
     final appNotifierInstance = ref.read(appNotifier.notifier);
@@ -112,9 +185,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
     var timelineLayerDetails = MouseRegion(
       onHover: (event) {
         // only clear the selection if we only have a single key selection
-        // this allows you to have multiple keys selected even when you lift the shift key
-        if (HighlightedKeys.isNotEmpty &&
-            (isShiftDown || HighlightedKeys.length >= 2)) {
+        if (HighlightedKeys.isNotEmpty) {
           HighlightedKeys.removeLast();
         }
 
@@ -126,18 +197,18 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
           return;
         }
         setState(() {
-          HighlightedKeys.clear();
-          // _highlightedKey = -1;
-          // if (isShiftDown == false) {
           // HighlightedKeys.clear();
-          // }
+          // _highlightedKey = -1;
+          if (isShiftDown == false) {
+            HighlightedKeys.clear();
+          }
         });
       },
       child: GestureDetector(
         onTapDown: (details) {
           // clear previous highlights
           // multiSelectionActive = false;
-          if (isShiftDown == false && HighlightedKeys.length > 2) {
+          if (isShiftDown == false && HighlightedKeys.length > 1) {
             HighlightedKeys.clear();
           }
           updateKeysHighlighted(details.localPosition, isShiftDown);
@@ -153,60 +224,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
         },
         onPanEnd: (_) => panEnd(isShiftDown),
         onPanCancel: () => panEnd(isShiftDown),
-        onSecondaryTapUp: (details) async {
-          secondaryActionActive = true;
-          // Right Click action
-          // clear duplicates
-          Set<int> toSet = HighlightedKeys.toSet();
-          HighlightedKeys = toSet.toList();
-
-          // so we know if we should allow adding keyframes
-          bool allFramesHaveKeyFrames = true;
-          bool anyOfTheFramesHaveKeyframe = false;
-          for (int index in HighlightedKeys) {
-            var notKeyframed = widget.layer.frameData.keyFrames?[index] == null;
-            if (notKeyframed) {
-              allFramesHaveKeyFrames = false;
-            } else {
-              anyOfTheFramesHaveKeyframe = true;
-            }
-          }
-
-          var rightClickMenu = <ContextMenuEntry>[
-            MenuItem(
-              label: 'Add Keyframe',
-              icon: Icons.add,
-              enabled: !allFramesHaveKeyFrames,
-              value: "add",
-            ),
-            MenuItem(
-              label: 'Remove Keyframe',
-              icon: Icons.remove,
-              enabled: anyOfTheFramesHaveKeyframe,
-              value: "remove",
-            ),
-          ];
-
-          final selectedValue = await ContextMenu(
-            entries: rightClickMenu,
-            position: details.globalPosition,
-            padding: const EdgeInsets.all(8.0),
-          ).show(context);
-
-          if (selectedValue == "add") {
-            setState(() {
-              secondaryActionActive = false;
-              widget.layer.addKeyFrames(HighlightedKeys);
-            });
-          } else if (selectedValue == "remove") {
-            setState(() {
-              secondaryActionActive = false;
-              widget.layer.removeKeyFrames(HighlightedKeys);
-              HighlightedKeys.clear();
-            });
-          }
-          secondaryActionActive = false;
-        },
+        onSecondaryTapUp: (details) => rightClickAction(details),
         child: CustomPaint(
           size: CanvasSize,
           painter: TLLayerPainter(

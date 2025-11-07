@@ -133,22 +133,6 @@ class FileLayer {
     newKeyFrames.remove(frameIndex);
     frameData = frameData.copyWith(keyFrames: newKeyFrames);
   }
-
-  void addKeyFrames(List<int> frameIndices) {
-    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
-    for (final index in frameIndices) {
-      newKeyFrames[index] = Data();
-    }
-    frameData = frameData.copyWith(keyFrames: newKeyFrames);
-  }
-
-  void removeKeyFrames(List<int> frameIndices) {
-    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
-    for (final index in frameIndices) {
-      newKeyFrames.remove(index);
-    }
-    frameData = frameData.copyWith(keyFrames: newKeyFrames);
-  }
 }
 
 class FileModel {
@@ -236,6 +220,54 @@ class FileNotifier extends Notifier<FileModel> {
     state = state.copyWith(
       layers: updatedLayers,
       layersHistory: [...state.layersHistory, state.layers],
+    );
+  }
+
+  void addKeyFrames(FileLayer layer, List<int> frameIndices) {
+    final current = state;
+
+    final updatedLayers = current.layers.map((l) {
+      if (l == layer) {
+        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames ?? {});
+        for (final index in frameIndices) {
+          newKeyFrames[index] = Data();
+        }
+
+        final updatedFrameData = l.frameData.copyWith(keyFrames: newKeyFrames);
+        return l.copyWith(frameData: updatedFrameData);
+      }
+      return l;
+    }).toList();
+
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
+    );
+  }
+
+  void removeKeyFrames(FileLayer layer, List<int> frameIndices) {
+    final current = state;
+
+    final updatedLayers = current.layers.map((l) {
+      if (l == layer) {
+        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames ?? {});
+        for (final index in frameIndices) {
+          newKeyFrames.remove(index);
+        }
+
+        final updatedFrameData = l.frameData.copyWith(keyFrames: newKeyFrames);
+        return l.copyWith(frameData: updatedFrameData);
+      }
+      return l;
+    }).toList();
+
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
     );
   }
 
