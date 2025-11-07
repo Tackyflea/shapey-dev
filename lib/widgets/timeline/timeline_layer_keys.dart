@@ -1,11 +1,13 @@
 // creates a whole row of keys
 import 'package:flutter/material.dart';
 import 'package:flutter_context_menu/flutter_context_menu.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 
 // creates a row for every timeline element including keys and headings (but not layers)
-class TimelineLayerKeys extends StatefulWidget {
+class TimelineLayerKeys extends ConsumerStatefulWidget {
   final int frames;
   final FileLayer layer; // vertical layer number
   final int fps;
@@ -19,16 +21,19 @@ class TimelineLayerKeys extends StatefulWidget {
   });
 
   @override
-  State<TimelineLayerKeys> createState() => _TimelineLayerKeysState();
+  ConsumerState<TimelineLayerKeys> createState() => _TimelineLayerKeysState();
 }
 
-class _TimelineLayerKeysState extends State<TimelineLayerKeys> {
-  Offset? _tapPosition;
-  int _highlightedKey = 0;
+class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
+  // additional potential keys on hover down
+  List<int> HighlightedKeys = List.empty(growable: true);
 
   late final Map<KeyStyle, Paint> keyFills;
   late final Map<KeyStyle, Paint> keyStrokes;
 
+  // indicates right click is active
+  bool secondaryActionActive = false;
+  bool dragDownStarted = false;
   late final double keyWidth = 8;
   @override
   void initState() {
@@ -68,8 +73,34 @@ class _TimelineLayerKeysState extends State<TimelineLayerKeys> {
     };
   }
 
+  void updateKeysHighlighted(Offset fromPosition, bool isShiftDown) {
+    var posX = fromPosition.dx;
+    int newKeyRollOver = (posX / keyWidth).toInt();
+
+    if (newKeyRollOver == -1) {
+      return;
+    }
+
+    // on active key change we can refresh the canvas
+    setState(() {
+      if (HighlightedKeys.isNotEmpty) {
+        if (isShiftDown == false && HighlightedKeys.length == 2) {
+          // you're moving around after clicking once, you can preview new spot to click
+          HighlightedKeys.removeAt(0);
+        }
+      }
+      HighlightedKeys.add(newKeyRollOver);
+    });
+  }
+
+  void panEnd(bool isShiftDown) {
+    dragDownStarted = false;
+  }
+
   @override
   Widget build(BuildContext _) {
+    final appNotifierInstance = ref.read(appNotifier.notifier);
+    final isShiftDown = appNotifierInstance.isShiftDown;
     // to reduce refreshing and since we know for now what the key sizes are gonna be, hard setting sizes
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;
@@ -80,42 +111,78 @@ class _TimelineLayerKeysState extends State<TimelineLayerKeys> {
     // returning fixed size so we can have different canvas widths per timeline
     var timelineLayerDetails = MouseRegion(
       onHover: (event) {
-        var posX = event.localPosition.dx;
-        int newKeyRollOver = (posX / keyWidth).toInt();
-        // on active key change we can refresh the canvas
-        if (_highlightedKey != newKeyRollOver) {
-          setState(() {
-            _highlightedKey = newKeyRollOver;
-          });
+        // only clear the selection if we only have a single key selection
+        // this allows you to have multiple keys selected even when you lift the shift key
+        if (HighlightedKeys.isNotEmpty &&
+            (isShiftDown || HighlightedKeys.length >= 2)) {
+          HighlightedKeys.removeLast();
         }
+
+        updateKeysHighlighted(event.localPosition, isShiftDown);
       },
       onExit: (event) {
+        // don't cancel highlighting if you're currently rightclicking
+        if (secondaryActionActive == true) {
+          return;
+        }
         setState(() {
+          HighlightedKeys.clear();
           // _highlightedKey = -1;
+          // if (isShiftDown == false) {
+          // HighlightedKeys.clear();
+          // }
         });
       },
       child: GestureDetector(
         onTapDown: (details) {
-          setState(() {
-            _tapPosition = details.localPosition;
-          });
+          // clear previous highlights
+          // multiSelectionActive = false;
+          if (isShiftDown == false && HighlightedKeys.length > 2) {
+            HighlightedKeys.clear();
+          }
+          updateKeysHighlighted(details.localPosition, isShiftDown);
         },
+        onPanUpdate: (details) {
+          if (dragDownStarted == false &&
+              isShiftDown == false &&
+              HighlightedKeys.isNotEmpty) {
+            HighlightedKeys.clear();
+          }
+          updateKeysHighlighted(details.localPosition, isShiftDown);
+          dragDownStarted = true;
+        },
+        onPanEnd: (_) => panEnd(isShiftDown),
+        onPanCancel: () => panEnd(isShiftDown),
         onSecondaryTapUp: (details) async {
+          secondaryActionActive = true;
           // Right Click action
-          var isKeyFramed =
-              widget.layer.frameData.keyFrames?[_highlightedKey] != null;
+          // clear duplicates
+          Set<int> toSet = HighlightedKeys.toSet();
+          HighlightedKeys = toSet.toList();
+
+          // so we know if we should allow adding keyframes
+          bool allFramesHaveKeyFrames = true;
+          bool anyOfTheFramesHaveKeyframe = false;
+          for (int index in HighlightedKeys) {
+            var notKeyframed = widget.layer.frameData.keyFrames?[index] == null;
+            if (notKeyframed) {
+              allFramesHaveKeyFrames = false;
+            } else {
+              anyOfTheFramesHaveKeyframe = true;
+            }
+          }
 
           var rightClickMenu = <ContextMenuEntry>[
             MenuItem(
               label: 'Add Keyframe',
               icon: Icons.add,
-              enabled: !isKeyFramed,
+              enabled: !allFramesHaveKeyFrames,
               value: "add",
             ),
             MenuItem(
               label: 'Remove Keyframe',
               icon: Icons.remove,
-              enabled: isKeyFramed,
+              enabled: anyOfTheFramesHaveKeyframe,
               value: "remove",
             ),
           ];
@@ -128,25 +195,28 @@ class _TimelineLayerKeysState extends State<TimelineLayerKeys> {
 
           if (selectedValue == "add") {
             setState(() {
-              widget.layer.addKeyFrame(_highlightedKey);
+              secondaryActionActive = false;
+              widget.layer.addKeyFrames(HighlightedKeys);
             });
           } else if (selectedValue == "remove") {
             setState(() {
-              widget.layer.removeKeyFrame(_highlightedKey);
+              secondaryActionActive = false;
+              widget.layer.removeKeyFrames(HighlightedKeys);
+              HighlightedKeys.clear();
             });
           }
+          secondaryActionActive = false;
         },
         child: CustomPaint(
           size: CanvasSize,
           painter: TLLayerPainter(
             CanvasSize,
             widget.layer,
-            _tapPosition,
             keyFills,
             keyStrokes,
             widget.fps,
             keyWidth,
-            _highlightedKey,
+            HighlightedKeys,
           ),
         ),
       ),
@@ -160,21 +230,19 @@ class TLLayerPainter extends CustomPainter {
   // so we can have custom canvas sizes
   final Size size;
   final FileLayer layer;
-  final Offset? tapPosition;
   final Map<KeyStyle, Paint> keyFills;
   final Map<KeyStyle, Paint> keyStrokes;
   final int fps;
   final double keyWidth;
-  final int highlightedKey;
+  final List<int> secondaryHighlightedKeys;
   TLLayerPainter(
     this.size,
     this.layer,
-    this.tapPosition,
     this.keyFills,
     this.keyStrokes,
     this.fps,
     this.keyWidth,
-    this.highlightedKey,
+    this.secondaryHighlightedKeys,
   );
 
   @override
@@ -186,7 +254,9 @@ class TLLayerPainter extends CustomPainter {
     for (int i = 0; i < keyCount; i++) {
       final bool isWholeSecond = i % fps == 0;
       final bool hasKeyframe = layer.frameData.keyFrames?[i] != null;
-      final bool isHighlighted = highlightedKey == i;
+      // final bool isHighlighted = highlightedKey == i;
+      final bool isHighlighted = secondaryHighlightedKeys.contains(i);
+
       KeyStyle style = KeyStyle.normal;
       // regular styles
       if (isWholeSecond) style = KeyStyle.normalWholeSecond;

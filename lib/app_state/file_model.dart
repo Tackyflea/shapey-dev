@@ -133,6 +133,22 @@ class FileLayer {
     newKeyFrames.remove(frameIndex);
     frameData = frameData.copyWith(keyFrames: newKeyFrames);
   }
+
+  void addKeyFrames(List<int> frameIndices) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
+    for (final index in frameIndices) {
+      newKeyFrames[index] = Data();
+    }
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
+  }
+
+  void removeKeyFrames(List<int> frameIndices) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
+    for (final index in frameIndices) {
+      newKeyFrames.remove(index);
+    }
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
+  }
 }
 
 class FileModel {
