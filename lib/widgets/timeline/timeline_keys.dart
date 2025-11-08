@@ -300,6 +300,7 @@ class TLLayerPainter extends CustomPainter {
         keyStrokes,
       );
     }
+    // dim not active layers
     if (isLayerActive == false) {
       canvas.drawRect(
         Rect.fromLTWH(0, 0, size.width, size.height),

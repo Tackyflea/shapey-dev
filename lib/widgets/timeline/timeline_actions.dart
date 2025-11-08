@@ -3,10 +3,10 @@ import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 
+// (History-able) Highight the current layer IF not already
 void action_highlightLayer(WidgetRef ref, FileLayer layer) {
   // ignore if already active
   if (layer.isMultiSelectActive()) {
-    print('already active');
     return;
   }
   // print("${DateTime.now().toIso8601String()} Listener Tap");

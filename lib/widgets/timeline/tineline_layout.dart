@@ -9,7 +9,7 @@ import 'package:shapey/widgets/timeline/timeline_keys.dart';
 import 'package:shapey/widgets/timeline/timeline_names.dart';
 import 'package:shapey/widgets/timeline/tl_left_side_parts/tl_fps_display.dart';
 
-import 'tl_headline_parts/timeline_layer_heading.dart';
+import 'tl_headline_parts/timeline_keys_heading.dart';
 
 class TimelineLayout extends ConsumerStatefulWidget {
   final bool? isHeading;
@@ -109,7 +109,7 @@ class _TimelineKeysState extends ConsumerState<TimelineLayout> {
           height: widget.headerHeight,
           scrollController: timelineVerticalScrollController,
         ),
-        TimelineLayerHeading(
+        TimelineKeysHeading(
           colorScheme: widget.colorScheme,
           fps: fps,
           frames: totalFrames,
