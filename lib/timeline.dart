@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/utility/panel_widget.dart';
-import 'package:shapey/widgets/timeline/timeline_keys_widget.dart';
+import 'package:shapey/widgets/timeline/tineline_layout.dart';
 
 const horisontalGridSettings = SliverGridDelegateWithFixedCrossAxisCount(
   crossAxisCount: 2,
@@ -29,7 +29,7 @@ class TimelineWidget extends ConsumerWidget {
         const double layerViewHeaderHeight = 25;
         return PanelWidget(
           name: "Timeline",
-          child: TimelineKeys(
+          child: TimelineLayout(
             layerViewWidth: layerViewWidth,
             keysWidth: windowWidth - layerViewWidth,
             height: timelineHeight - titleBarHeight,

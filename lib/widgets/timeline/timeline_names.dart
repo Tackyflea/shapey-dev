@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
+import 'package:shapey/widgets/timeline/timeline_actions.dart';
 
 class LayerName extends ConsumerStatefulWidget {
   final FileLayer layer;
@@ -19,25 +20,6 @@ class _LayerNameState extends ConsumerState<LayerName> {
   bool canRename = false;
 
   late TextEditingController textEditController;
-
-  void highlightLayer() {
-    // print("${DateTime.now().toIso8601String()} Listener Tap");
-    final fileModel = ref.read(fileNotifier.notifier);
-    final appNotifierInstance = ref.read(appNotifier.notifier);
-    final isShiftDown = appNotifierInstance.isShiftDown;
-    final appCommandHistory = appNotifierInstance.appCommandHistory;
-    //  if you let go of shift, reset layer highliting
-
-    // hightlight layer
-    appCommandHistory.executeCommand(
-      SetMultiSelectActiveCommand(
-        fileModel,
-        widget.layer.guid(),
-        true,
-        isShiftDown,
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -118,7 +100,7 @@ class _LayerNameState extends ConsumerState<LayerName> {
             }
           },
           child: Listener(
-            onPointerDown: (event) => highlightLayer(),
+            onPointerDown: (event) => action_highlightLayer(ref, widget.layer),
             child: GestureDetector(
               onDoubleTap: () {
                 setState(() => canRename = true);
@@ -172,6 +154,39 @@ class _LayerNameState extends ConsumerState<LayerName> {
       alignment: Alignment.topLeft,
       padding: EdgeInsetsGeometry.fromLTRB(10, 5, 0, 0),
       child: Row(spacing: 5, children: [eyeIcon, lockIcon, layerText]),
+    );
+  }
+}
+
+/// The Layer Names on the left side, IE Visible, locked, Layer name list
+class TimelineNamesList extends ConsumerWidget {
+  final ScrollController tlNameViewScrollbar;
+  final double layerHeight;
+  const TimelineNamesList({
+    super.key,
+    required this.tlNameViewScrollbar,
+    required this.layerHeight,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // ONLY listen to layer changes
+    final List<FileLayer> layers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+    return ListView.builder(
+      itemCount: layers.length,
+
+      prototypeItem: SizedBox(height: layerHeight),
+      scrollDirection: Axis.vertical,
+      cacheExtent: 500 * layerHeight,
+      controller: tlNameViewScrollbar,
+      addRepaintBoundaries: false,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) => LayerName(
+        key: ValueKey("Row-LayerName-$layerIndex"),
+        layer: layers[layerIndex],
+      ),
     );
   }
 }

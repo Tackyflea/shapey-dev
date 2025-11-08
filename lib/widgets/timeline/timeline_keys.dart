@@ -6,6 +6,7 @@ import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:shapey/widgets/timeline/timeline_actions.dart';
 
 // creates a row for every timeline element including keys and headings (but not layers)
 class TimelineLayerKeys extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
   // additional potential keys on hover down
   List<int> HighlightedKeys = List.empty(growable: true);
 
+  late final Paint activeLayerTintFill;
   late final Map<KeyStyle, Paint> keyFills;
   late final Map<KeyStyle, Paint> keyStrokes;
 
@@ -39,6 +41,9 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
   @override
   void initState() {
     super.initState();
+    // tint color
+    activeLayerTintFill = Paint()
+      ..color = widget.colorScheme.inversePrimary.withAlpha(64);
     // Pre fill and stroke the keys so there's less build process in rendering them
     keyFills = {
       KeyStyle.normal: Paint()..color = widget.colorScheme.onSecondary,
@@ -205,6 +210,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
         });
       },
       child: GestureDetector(
+        onTap: () => action_highlightLayer(ref, widget.layer),
         onTapDown: (details) {
           // clear previous highlights
           // multiSelectionActive = false;
@@ -232,6 +238,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
             widget.layer,
             keyFills,
             keyStrokes,
+            activeLayerTintFill,
             widget.fps,
             keyWidth,
             HighlightedKeys,
@@ -250,6 +257,7 @@ class TLLayerPainter extends CustomPainter {
   final FileLayer layer;
   final Map<KeyStyle, Paint> keyFills;
   final Map<KeyStyle, Paint> keyStrokes;
+  final Paint activeLayerTintFill;
   final int fps;
   final double keyWidth;
   final List<int> secondaryHighlightedKeys;
@@ -258,6 +266,7 @@ class TLLayerPainter extends CustomPainter {
     this.layer,
     this.keyFills,
     this.keyStrokes,
+    this.activeLayerTintFill,
     this.fps,
     this.keyWidth,
     this.secondaryHighlightedKeys,
@@ -266,6 +275,7 @@ class TLLayerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size _) {
     final keyCount = layer.frameCount();
+    final isLayerActive = layer.isMultiSelectActive();
     final Size keySize = Size(keyWidth, size.height);
 
     // Draw Keys
@@ -290,6 +300,12 @@ class TLLayerPainter extends CustomPainter {
         keyStrokes,
       );
     }
+    if (isLayerActive == false) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        activeLayerTintFill,
+      );
+    }
   }
 
   @override
@@ -312,5 +328,72 @@ extension DrawKey on Canvas {
       rect.height - strokeWidth,
     );
     drawRect(rect2, strokes[style]!);
+  }
+}
+
+/// The keyframes on the right side of the timeline IE ||||||| x rows
+class TimelineKeysList extends ConsumerWidget {
+  final ScrollController tlLayerViewScrollbar;
+  final double layerHeight;
+  const TimelineKeysList({
+    super.key,
+    required this.layerHeight,
+    required this.tlLayerViewScrollbar,
+  });
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<FileLayer> layers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+    final double duration = ref.watch(
+      fileNotifier.select((s) => s.timelineDuration),
+    );
+    final int fps = ref.watch(fileNotifier.select((s) => s.fps));
+
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    final int totalFrames = (duration * fps).toInt();
+
+    final ListView layerKeysList = ListView.builder(
+      scrollDirection: Axis.vertical,
+      prototypeItem: SizedBox(height: layerHeight),
+      itemCount: layers.length, // for performance
+      controller: tlLayerViewScrollbar,
+      cacheExtent: 1000,
+      addRepaintBoundaries: false,
+      addAutomaticKeepAlives: true,
+      itemBuilder: (context, layerIndex) {
+        final cs = colorScheme;
+        final frames = totalFrames;
+        return TimelineLayerKeys(
+          key: ValueKey(layers[layerIndex].guid()),
+          layer: layers[layerIndex],
+          colorScheme: cs,
+          fps: fps,
+          frames: frames,
+        );
+      },
+    );
+
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(
+        context,
+      ).copyWith(scrollbars: false, overscroll: false),
+      child: RawScrollbar(
+        controller: tlLayerViewScrollbar,
+        trackVisibility: true,
+        interactive: true,
+        thickness: 10,
+        thumbVisibility: true,
+        thumbColor: colorScheme.onSecondary,
+        fadeDuration: Duration(milliseconds: 200),
+        trackRadius: Radius.circular(33),
+        trackColor: colorScheme.onPrimaryFixed,
+        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+        minThumbLength: 12,
+        shape: StadiumBorder(),
+        child: layerKeysList,
+      ),
+    );
   }
 }

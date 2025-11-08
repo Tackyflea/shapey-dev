@@ -4,11 +4,11 @@ import 'tl_headline_key_bar.dart';
 import 'tl_headline_key_half_bar.dart';
 
 // The FRAMES headline where you indicate what frame you're at
-class TimelineHeadline extends StatelessWidget {
+class TimelineLayerHeading extends StatelessWidget {
   final int frames;
   final int fps;
   final ColorScheme colorScheme;
-  const TimelineHeadline({
+  const TimelineLayerHeading({
     super.key,
     required this.frames,
     required this.fps,
