@@ -223,7 +223,7 @@ class FileNotifier extends Notifier<FileModel> {
     );
   }
 
-  void addKeyFrames(FileLayer layer, List<int> frameIndices) {
+  void addKeyFrames(FileLayer layer, Set<int> frameIndices) {
     final current = state;
 
     final updatedLayers = current.layers.map((l) {
@@ -247,7 +247,7 @@ class FileNotifier extends Notifier<FileModel> {
     );
   }
 
-  void removeKeyFrames(FileLayer layer, List<int> frameIndices) {
+  void removeKeyFrames(FileLayer layer, Set<int> frameIndices) {
     final current = state;
 
     final updatedLayers = current.layers.map((l) {

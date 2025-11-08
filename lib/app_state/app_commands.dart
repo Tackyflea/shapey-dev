@@ -152,7 +152,7 @@ class RemoveLayerCommand implements AppCommand {
 class AddKeyFramesCommand implements AppCommand {
   final FileNotifier notifier;
   final FileLayer layer;
-  final List<int> keyFrames;
+  final Set<int> keyFrames;
   late final List<FileLayer> _beforeLayers;
 
   AddKeyFramesCommand(this.notifier, this.layer, this.keyFrames);
@@ -175,7 +175,7 @@ class AddKeyFramesCommand implements AppCommand {
 class RemoveKeyFramesCommand implements AppCommand {
   final FileNotifier notifier;
   final FileLayer layer;
-  final List<int> keyFrames;
+  final Set<int> keyFrames;
   late final List<FileLayer> _beforeLayers;
 
   RemoveKeyFramesCommand(this.notifier, this.layer, this.keyFrames);

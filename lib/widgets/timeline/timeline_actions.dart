@@ -21,3 +21,19 @@ void action_highlightLayer(WidgetRef ref, FileLayer layer) {
     SetMultiSelectActiveCommand(fileModel, layer.guid(), true, isShiftDown),
   );
 }
+
+void action_add_keyframes(WidgetRef ref, FileLayer layer, Set<int> Keys) {
+  ref
+      .read(appNotifier.select((s) => s.appCommandHistory))
+      .executeCommand(
+        AddKeyFramesCommand(ref.read(fileNotifier.notifier), layer, Keys),
+      );
+}
+
+void action_remove_keyframes(WidgetRef ref, FileLayer layer, Set<int> Keys) {
+  ref
+      .read(appNotifier.select((s) => s.appCommandHistory))
+      .executeCommand(
+        RemoveKeyFramesCommand(ref.read(fileNotifier.notifier), layer, Keys),
+      );
+}

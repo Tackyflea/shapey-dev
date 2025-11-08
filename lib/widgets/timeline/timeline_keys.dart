@@ -149,28 +149,12 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
       setState(() {
         secondaryActionActive = false;
         // print("pressed the add button");
-        ref
-            .read(appNotifier.select((s) => s.appCommandHistory))
-            .executeCommand(
-              AddKeyFramesCommand(
-                ref.read(fileNotifier.notifier),
-                widget.layer,
-                HighlightedKeys,
-              ),
-            );
+        action_add_keyframes(ref, widget.layer, HighlightedKeys.toSet());
       });
       HighlightedKeys.clear();
     } else if (selectedValue == "remove") {
       setState(() {
-        ref
-            .read(appNotifier.select((s) => s.appCommandHistory))
-            .executeCommand(
-              RemoveKeyFramesCommand(
-                ref.read(fileNotifier.notifier),
-                widget.layer,
-                HighlightedKeys,
-              ),
-            );
+        action_remove_keyframes(ref, widget.layer, HighlightedKeys.toSet());
       });
       HighlightedKeys.clear();
     }
