@@ -93,6 +93,8 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
         if (isShiftDown == false && HighlightedKeys.length == 2) {
           // you're moving around after clicking once, you can preview new spot to click
           HighlightedKeys.removeAt(0);
+        } else {
+          // print('shift is down $newKeyRollOver');
         }
       }
       HighlightedKeys.add(newKeyRollOver);
@@ -241,7 +243,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
             activeLayerTintFill,
             widget.fps,
             keyWidth,
-            HighlightedKeys,
+            HighlightedKeys.toSet(),
           ),
         ),
       ),
@@ -260,7 +262,7 @@ class TLLayerPainter extends CustomPainter {
   final Paint activeLayerTintFill;
   final int fps;
   final double keyWidth;
-  final List<int> secondaryHighlightedKeys;
+  final Set<int> secondaryHighlightedKeys;
   TLLayerPainter(
     this.size,
     this.layer,
