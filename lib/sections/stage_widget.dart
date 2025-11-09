@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
+import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/shape_canvas.dart';
 import 'package:shapey/sections/titlebar_widget.dart';
 import 'package:shapey/utility/stage_intents.dart';
@@ -21,6 +23,23 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
   // https://github.com/flutter/packages/tree/main/third_party/packages/flutter_svg
   // https://appsgemacht.de/en/insights/svg-vector-graphics-flutter
   // https://stackoverflow.com/questions/57874374/flutter-draw-svg-in-custompaint-canvas
+  @override
+  void initState() {
+    // INITIAL STAGE SETUP
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(appNotifier.notifier)
+          .appCommandHistory
+          .executeCommand(
+            // sets up layer 0
+            AddInitialLayerCommand(
+              ref.read(fileNotifier.notifier),
+              ref.read(appNotifier.notifier),
+            ),
+          );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

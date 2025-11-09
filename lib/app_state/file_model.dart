@@ -1,6 +1,7 @@
 // contrils the specific file's model
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
@@ -173,15 +174,7 @@ class FileNotifier extends Notifier<FileModel> {
   @override
   FileModel build() {
     debugPrint("file model innitialized");
-    // initial default data for app
-    var startFileLayer = FileLayer();
-    startFileLayer.setName("Layer 0");
-    startFileLayer.setMultiSelect(true);
-    startFileLayer.setFrameCount(
-      (DEFAULT_FPS * DEFAULT_TIMELINE_DURATION).toInt(),
-    );
-
-    var newFile = FileModel(fileName: 'File1', layers: [startFileLayer]);
+    var newFile = FileModel();
 
     return newFile;
   }

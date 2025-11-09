@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
@@ -11,14 +12,20 @@ void action_highlightLayer(WidgetRef ref, FileLayer layer) {
   }
   // print("${DateTime.now().toIso8601String()} Listener Tap");
   final fileModel = ref.read(fileNotifier.notifier);
-  final appNotifierInstance = ref.read(appNotifier.notifier);
-  final isShiftDown = appNotifierInstance.isShiftDown;
-  final appCommandHistory = appNotifierInstance.appCommandHistory;
+  final appModel = ref.read(appNotifier.notifier);
+  final isShiftDown = appModel.isShiftDown;
+  final appCommandHistory = appModel.appCommandHistory;
   //  if you let go of shift, reset layer highliting
 
   // hightlight layer
   appCommandHistory.executeCommand(
-    SetMultiSelectActiveCommand(fileModel, layer.guid(), true, isShiftDown),
+    SetMultiSelectActiveCommand(
+      fileModel,
+      appModel,
+      layer.guid(),
+      true,
+      isShiftDown,
+    ),
   );
 }
 
@@ -36,4 +43,15 @@ void action_remove_keyframes(WidgetRef ref, FileLayer layer, Set<int> Keys) {
       .executeCommand(
         RemoveKeyFramesCommand(ref.read(fileNotifier.notifier), layer, Keys),
       );
+}
+
+void action_set_frame(WidgetRef ref, int newFrame) {
+  // ref
+  //     .read(appNotifier.select((s) => s.appCommandHistory))
+  //     .executeCommand(
+  //       SetActiveFrameCommand(ref.read(appNotifier.notifier), newFrame),
+  //     );
+  // Design choice , for now --
+  // changing frame doesnt get written in history, as that might get huge
+  ref.read(appNotifier.notifier).restoreActiveFrameWithoutHistory(newFrame);
 }

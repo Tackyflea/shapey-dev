@@ -1,4 +1,5 @@
 import 'package:shapey/app_state/app_history.dart';
+import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
@@ -49,22 +50,26 @@ class DrawySelectCommand implements AppCommand {
 }
 
 class AddLayerCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
+  final AppNotifier appNotifier;
   late final List<FileLayer> _beforeLayers;
+  late final String? _beforeActiveLayer;
 
-  AddLayerCommand(this.notifier);
+  AddLayerCommand(this.fileNotifier, this.appNotifier);
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
-    notifier.clearLayerMultiSelection();
-    notifier.addLayer();
-    notifier.setMultiSelectActive(notifier.layers.last.guid(), true);
+    _beforeLayers = [...fileNotifier.layers];
+    fileNotifier.clearLayerMultiSelection();
+    fileNotifier.addLayer();
+    fileNotifier.setMultiSelectActive(fileNotifier.layers.last.guid(), true);
+    appNotifier.updateActiveLayer(fileNotifier.layers.last.guid());
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
+    appNotifier.restoreActiveLayerWithoutHistory(_beforeActiveLayer);
   }
 
   @override
@@ -74,14 +79,17 @@ class AddLayerCommand implements AppCommand {
 // Set the LAYER to be multi layer active // for shift selecting layers
 // if shift isn't down, you'll reset selection
 class SetMultiSelectActiveCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
+  final AppNotifier appNotifier;
   final String layerGUID;
   final bool onOff;
   final bool shiftDown;
   late final List<FileLayer> _beforeLayers;
+  late String? _beforeActiveLayer;
 
   SetMultiSelectActiveCommand(
-    this.notifier,
+    this.fileNotifier,
+    this.appNotifier,
     this.layerGUID,
     this.onOff,
     this.shiftDown,
@@ -89,16 +97,19 @@ class SetMultiSelectActiveCommand implements AppCommand {
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
+    _beforeLayers = [...fileNotifier.layers];
+    _beforeActiveLayer = appNotifier.activeLayer;
     if (shiftDown == false) {
-      notifier.clearLayerMultiSelection();
+      fileNotifier.clearLayerMultiSelection();
     }
-    notifier.setMultiSelectActive(layerGUID, onOff);
+    fileNotifier.setMultiSelectActive(layerGUID, onOff);
+    appNotifier.updateActiveLayer(layerGUID);
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
+    appNotifier.restoreActiveLayerWithoutHistory(_beforeActiveLayer);
   }
 
   @override
@@ -107,20 +118,25 @@ class SetMultiSelectActiveCommand implements AppCommand {
 
 // CLEAR all LAYER multi selection
 class ClearLayerMultiSelectionCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
+  final AppNotifier appNotifier;
   late final List<FileLayer> _beforeLayers;
+  late String? _beforeActiveLayer;
 
-  ClearLayerMultiSelectionCommand(this.notifier);
+  ClearLayerMultiSelectionCommand(this.fileNotifier, this.appNotifier);
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
-    notifier.clearLayerMultiSelection();
+    _beforeLayers = [...fileNotifier.layers];
+    _beforeActiveLayer = appNotifier.activeLayer;
+    fileNotifier.clearLayerMultiSelection();
+    appNotifier.updateActiveLayer(null);
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
+    appNotifier.restoreActiveLayerWithoutHistory(_beforeActiveLayer);
   }
 
   @override
@@ -147,6 +163,28 @@ class RemoveLayerCommand implements AppCommand {
 
   @override
   String getTitle() => '${layer.name()} removing layer ';
+}
+
+class SetActiveFrameCommand implements AppCommand {
+  final AppNotifier appNotifier;
+  final int frame;
+  late final int _beforeActiveFrame;
+
+  SetActiveFrameCommand(this.appNotifier, this.frame);
+
+  @override
+  void execute() {
+    _beforeActiveFrame = appNotifier.activeFrame;
+    appNotifier.updateActiveFrame(frame);
+  }
+
+  @override
+  void undo() {
+    appNotifier.restoreActiveFrameWithoutHistory(_beforeActiveFrame);
+  }
+
+  @override
+  String getTitle() => 'setting frame to $frame';
 }
 
 class AddKeyFramesCommand implements AppCommand {
@@ -193,4 +231,35 @@ class RemoveKeyFramesCommand implements AppCommand {
 
   @override
   String getTitle() => '${layer.name()} removing keyframes';
+}
+
+class AddInitialLayerCommand implements AppCommand {
+  final FileNotifier fileNotifier;
+  final AppNotifier appNotifier;
+
+  late FileLayer _layer;
+
+  AddInitialLayerCommand(this.fileNotifier, this.appNotifier);
+
+  @override
+  void execute() {
+    _layer = FileLayer();
+    _layer.setName("Layer 0");
+    _layer.setMultiSelect(true);
+    _layer.setFrameCount((DEFAULT_FPS * DEFAULT_TIMELINE_DURATION).toInt());
+
+    fileNotifier.insertLayer(0, _layer); // history recorded
+    appNotifier.updateActiveLayer(_layer.guid()); // history recorded
+    appNotifier.updateActiveFrame(0);
+  }
+
+  @override
+  void undo() {
+    // We don't actually want to undo the init state
+    // fileNotifier.removeLayer(_layer); // restore previous state
+    // appNotifier.updateActiveLayer(null); // restore previous state
+  }
+
+  @override
+  String getTitle() => "Add initial layer";
 }

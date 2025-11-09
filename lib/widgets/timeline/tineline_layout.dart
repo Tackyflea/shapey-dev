@@ -151,7 +151,10 @@ class _TimelineKeysState extends ConsumerState<TimelineLayout> {
               onPressed: () {
                 // print("pressed the add button");
                 final FileNotifier fileModel = ref.read(fileNotifier.notifier);
-                appCommandHistory.executeCommand(AddLayerCommand(fileModel));
+                final AppNotifier appModel = ref.read(appNotifier.notifier);
+                appCommandHistory.executeCommand(
+                  AddLayerCommand(fileModel, appModel),
+                );
               },
               icon: Icon(
                 size: 18,

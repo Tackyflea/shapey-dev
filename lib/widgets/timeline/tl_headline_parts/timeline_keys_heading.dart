@@ -1,8 +1,11 @@
 // HEADING details  , todo: CLEAN
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shapey/widgets/timeline/timeline_actions.dart';
+import 'package:shapey/widgets/timeline/timeline_scrubber.dart';
 
 // The FRAMES headline where you indicate what frame you're at
-class TimelineKeysHeading extends StatelessWidget {
+class TimelineKeysHeading extends ConsumerWidget {
   final int frames;
   final int fps;
   final ColorScheme colorScheme;
@@ -14,7 +17,7 @@ class TimelineKeysHeading extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // to reduce refreshing and since we know for now what the key sizes are gonna be, hard setting sizes
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;
@@ -33,17 +36,35 @@ class TimelineKeysHeading extends StatelessWidget {
       fontWeight: FontWeight.w700,
       fontSize: fontSize,
     );
+    void checkForFrame(double posX) {
+      int newKeyRollOver = (posX / keyWidth).toInt();
+      if (newKeyRollOver < 0) {
+        return;
+      }
+      action_set_frame(ref, newKeyRollOver);
+    }
 
     return Expanded(
-      child: CustomPaint(
-        size: CanvasSize,
-        painter: TLKeysHeadingPainter(
-          CanvasSize,
-          keyFills,
-          headerTextStyle,
-          frames,
-          fps,
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onTapDown: (details) => checkForFrame(details.localPosition.dx),
+            onPanUpdate: (details) => checkForFrame(details.localPosition.dx),
+            onPanEnd: (details) => checkForFrame(details.localPosition.dx),
+            child: CustomPaint(
+              size: CanvasSize,
+              painter: TLKeysHeadingPainter(
+                size: CanvasSize,
+                keyFills: keyFills,
+                textStyle: headerTextStyle,
+                frames: frames,
+                fps: fps,
+              ),
+            ),
+          ),
+          TimelineScrubber(keyWidth: keyWidth),
+        ],
       ),
     );
   }
@@ -55,13 +76,13 @@ class TLKeysHeadingPainter extends CustomPainter {
   final TextStyle textStyle;
   final int frames;
   final int fps;
-  TLKeysHeadingPainter(
-    this.size,
-    this.keyFills,
-    this.textStyle,
-    this.frames,
-    this.fps,
-  );
+  TLKeysHeadingPainter({
+    required this.size,
+    required this.keyFills,
+    required this.textStyle,
+    required this.frames,
+    required this.fps,
+  });
 
   final double keyHeight = 9;
   final double halfKeyHeight = 11;

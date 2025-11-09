@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/app_commands.dart';
+import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
@@ -66,10 +67,15 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     final ActiveTool activeTool = ref.watch(
       appNotifier.select((s) => s.activeTool),
     );
+
     final AppCommandInvoker appCommandHistory = ref.watch(
       appNotifier.select((s) => s.appCommandHistory),
     );
-
+    final String? activeLayer = ref.watch(
+      appNotifier.select((s) => s.activeLayer),
+    );
+    print('refresh');
+    print(activeLayer);
     //Reloads the stage on state change
     ref.listen(appNotifier.select((s) => s.stateChange), (prev, next) {
       setState(() {
