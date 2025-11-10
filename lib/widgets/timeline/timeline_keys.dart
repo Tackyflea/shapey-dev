@@ -27,7 +27,7 @@ class TimelineLayerKeys extends ConsumerStatefulWidget {
 
 class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
   // additional potential keys on hover down
-  List<int> HighlightedKeys = List.empty(growable: true);
+  Set<int> HighlightedKeys = {};
 
   late final Paint activeLayerTintFill;
   late final Map<KeyStyle, Paint> keyFills;
@@ -37,6 +37,32 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
   bool secondaryActionActive = false;
   bool dragDownStarted = false;
   late final double keyWidth = 8;
+  late int firstKeySelected = -1;
+  late int firstKeySelectedWithShift = -1;
+
+  void addRangeOfKeys(int a, int b) {
+    final start = a < b ? a : b;
+    final end = a > b ? a : b;
+    for (int i = start; i <= end; i++) {
+      HighlightedKeys.add(i);
+    }
+  }
+
+  Set<int> getRangeOfKeys(int a, int b) {
+    final start = a < b ? a : b;
+    final end = a > b ? a : b;
+    Set<int> newRangeOfKeys = {};
+    for (int i = start; i <= end; i++) {
+      newRangeOfKeys.add(i);
+    }
+    return newRangeOfKeys;
+  }
+
+  void panEnd() {
+    dragDownStarted = false;
+    firstKeySelected = -1;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -78,38 +104,46 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
     };
   }
 
-  void updateKeysHighlighted(Offset fromPosition, bool isShiftDown) {
+  int updateKeysHighlighted(
+    Offset fromPosition,
+    bool isShiftDown,
+    bool isCtrlDown,
+  ) {
     var posX = fromPosition.dx;
     int newKeyRollOver = (posX / keyWidth).toInt();
 
     if (newKeyRollOver == -1) {
-      return;
+      return newKeyRollOver;
     }
 
     // on active key change we can refresh the canvas
     setState(() {
-      if (HighlightedKeys.isNotEmpty) {
-        if (isShiftDown == false && HighlightedKeys.length == 2) {
-          // you're moving around after clicking once, you can preview new spot to click
-          HighlightedKeys.removeAt(0);
-        } else {
-          // print('shift is down $newKeyRollOver');
-        }
+      if (firstKeySelected == -1) {
+        firstKeySelected = newKeyRollOver;
       }
-      HighlightedKeys.add(newKeyRollOver);
+      if (firstKeySelectedWithShift == -1) {
+        firstKeySelectedWithShift = newKeyRollOver;
+      }
+      if (isCtrlDown == true) {
+        addRangeOfKeys(firstKeySelected, newKeyRollOver);
+      } else {
+        Set<int> newKeys;
+        if (isShiftDown == true) {
+          newKeys = getRangeOfKeys(firstKeySelectedWithShift, newKeyRollOver);
+        } else {
+          newKeys = getRangeOfKeys(firstKeySelected, newKeyRollOver);
+        }
+        HighlightedKeys = newKeys;
+      }
     });
-  }
 
-  void panEnd(bool isShiftDown) {
-    dragDownStarted = false;
+    return newKeyRollOver;
   }
 
   Future<void> rightClickAction(TapUpDetails event) async {
     secondaryActionActive = true;
     // Right Click action
     // clear duplicates
-    Set<int> toSet = HighlightedKeys.toSet();
-    HighlightedKeys = toSet.toList();
 
     // so we know if we should allow adding keyframes
     bool allFramesHaveKeyFrames = true;
@@ -164,6 +198,14 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
   Widget build(BuildContext _) {
     final appNotifierInstance = ref.read(appNotifier.notifier);
     final isShiftDown = appNotifierInstance.isShiftDown;
+    final isCtrlDown = appNotifierInstance.isCtrlDown;
+    ref.listen(appNotifier.select((s) => s.isShiftDown), (prev, next) {
+      if (next == false) {
+        // reset on shift up
+        firstKeySelectedWithShift = -1;
+      }
+    });
+
     // to reduce refreshing and since we know for now what the key sizes are gonna be, hard setting sizes
     // In future, we could link these but so that we dont have to constant refresh them
     final double keyWidth = 8;
@@ -173,48 +215,26 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
 
     // returning fixed size so we can have different canvas widths per timeline
     var timelineLayerDetails = MouseRegion(
-      onHover: (event) {
-        // only clear the selection if we only have a single key selection
-        if (HighlightedKeys.isNotEmpty) {
-          HighlightedKeys.removeLast();
-        }
-
-        updateKeysHighlighted(event.localPosition, isShiftDown);
-      },
-      onExit: (event) {
-        // don't cancel highlighting if you're currently rightclicking
-        if (secondaryActionActive == true) {
-          return;
-        }
-        setState(() {
-          // HighlightedKeys.clear();
-          // _highlightedKey = -1;
-          if (isShiftDown == false) {
-            HighlightedKeys.clear();
-          }
-        });
-      },
+      onHover: (event) {},
+      onEnter: (event) {},
+      onExit: (event) {},
       child: GestureDetector(
         onTap: () => action_highlightLayer(ref, widget.layer),
         onTapDown: (details) {
-          // clear previous highlights
-          // multiSelectionActive = false;
-          if (isShiftDown == false && HighlightedKeys.length > 1) {
-            HighlightedKeys.clear();
-          }
-          updateKeysHighlighted(details.localPosition, isShiftDown);
+          // on init tap down, always mark first key as whatevers on tap down
+          updateKeysHighlighted(details.localPosition, isShiftDown, isCtrlDown);
         },
         onPanUpdate: (details) {
           if (dragDownStarted == false &&
-              isShiftDown == false &&
+              isCtrlDown == false &&
               HighlightedKeys.isNotEmpty) {
             HighlightedKeys.clear();
           }
-          updateKeysHighlighted(details.localPosition, isShiftDown);
+          updateKeysHighlighted(details.localPosition, isShiftDown, isCtrlDown);
           dragDownStarted = true;
         },
-        onPanEnd: (_) => panEnd(isShiftDown),
-        onPanCancel: () => panEnd(isShiftDown),
+        onPanEnd: (_) => panEnd(),
+        onPanCancel: () => panEnd(),
         onSecondaryTapUp: (details) => rightClickAction(details),
         child: CustomPaint(
           size: CanvasSize,

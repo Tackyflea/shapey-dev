@@ -144,6 +144,14 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
                 ref.read(appNotifier.notifier).setShiftDown(false);
               }
             }
+            if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+                event.logicalKey == LogicalKeyboardKey.controlRight) {
+              if (event is KeyDownEvent) {
+                ref.read(appNotifier.notifier).setCtrlDown(true);
+              } else if (event is KeyUpEvent) {
+                ref.read(appNotifier.notifier).setCtrlDown(false);
+              }
+            }
             return KeyEventResult.ignored;
           },
           child: Stack(

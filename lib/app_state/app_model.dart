@@ -13,12 +13,12 @@ class AppModel {
     this.activeTool = ActiveTool
         .penTool, // starting with pen tool just to make debugging faster
     this.isShiftDown = false,
+    this.isCtrlDown = false,
     required this.appCommandHistory,
     this.nameHistory = const [],
     this.activeLayerHistory = const [],
     this.activeFrameHistory = const [],
     this.toolHistory = const [],
-    this.shiftHistory = const [],
   });
 
   final String? name;
@@ -28,13 +28,13 @@ class AppModel {
   final ActiveTool activeTool; // which tool the user last picked
   final AppCommandInvoker appCommandHistory;
   final bool isShiftDown;
+  final bool isCtrlDown;
 
   // --- History tracking (mirrors FileNotifier’s layersHistory pattern) ---
   final List<String?> nameHistory;
   final List<String?> activeLayerHistory;
   final List<int> activeFrameHistory;
   final List<ActiveTool> toolHistory;
-  final List<bool> shiftHistory;
 
   AppModel copyWith({
     int? stateChange,
@@ -43,11 +43,11 @@ class AppModel {
     String? activeLayer,
     ActiveTool? activeTool,
     bool? isShiftDown,
+    bool? isCtrlDown,
     List<String?>? nameHistory,
     List<String?>? activeLayerHistory,
     List<int>? activeFrameHistory,
     List<ActiveTool>? toolHistory,
-    List<bool>? shiftHistory,
   }) {
     return AppModel(
       name: name ?? this.name,
@@ -57,11 +57,11 @@ class AppModel {
       activeFrame: activeFrame ?? this.activeFrame,
       appCommandHistory: appCommandHistory,
       isShiftDown: isShiftDown ?? this.isShiftDown,
+      isCtrlDown: isCtrlDown ?? this.isCtrlDown,
       nameHistory: nameHistory ?? this.nameHistory,
       activeLayerHistory: activeLayerHistory ?? this.activeLayerHistory,
       activeFrameHistory: activeFrameHistory ?? this.activeFrameHistory,
       toolHistory: toolHistory ?? this.toolHistory,
-      shiftHistory: shiftHistory ?? this.shiftHistory,
     );
   }
 }
@@ -135,18 +135,27 @@ class AppNotifier extends Notifier<AppModel> {
   // === Track changes to shift key state ===
   void setShiftDown(bool value) {
     final current = state;
-    final updatedHistory = [...current.shiftHistory, current.isShiftDown];
-    state = current.copyWith(isShiftDown: value, shiftHistory: updatedHistory);
+    state = current.copyWith(isShiftDown: value);
   }
 
   void restoreShiftDownWithoutHistory(bool value) {
     state = state.copyWith(isShiftDown: value);
   }
 
+  void setCtrlDown(bool value) {
+    final current = state;
+    state = current.copyWith(isCtrlDown: value);
+  }
+
+  void restoreCtrlDownWithoutHistory(bool value) {
+    state = state.copyWith(isCtrlDown: value);
+  }
+
   // === Accessors ===
   String get name => state.name ?? 'Default Name';
   ActiveTool get activeTool => state.activeTool;
   bool get isShiftDown => state.isShiftDown;
+  bool get isCtrlDown => state.isCtrlDown;
   AppCommandInvoker get appCommandHistory => state.appCommandHistory;
   String? get activeLayer => state.activeLayer;
   int get activeFrame => state.activeFrame;
