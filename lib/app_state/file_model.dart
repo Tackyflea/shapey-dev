@@ -1,7 +1,6 @@
 // contrils the specific file's model
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_model.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
@@ -10,25 +9,30 @@ import '../utility/drawy/drawy_path.dart';
 const int DEFAULT_FPS = 30;
 const double DEFAULT_TIMELINE_DURATION = 5.0;
 
-// individual keyframe data
 class Data {
-  List<DrawyPath>? drawPaths = [];
+  final List<DrawyPath>? drawPaths;
+  final int activePath;
+
+  Data({this.drawPaths, this.activePath = -1});
+
+  Data copyWith({List<DrawyPath>? paths, int? activePath}) {
+    return Data(
+      drawPaths:
+          paths ??
+          (drawPaths != null ? List<DrawyPath>.from(drawPaths!) : null),
+      activePath: activePath ?? this.activePath,
+    );
+  }
 }
 
-// Data for the frames, if any
 class FrameData {
-  // List of currently selected frames
-  List<int>? activeFrames = [];
-  int frameCount = 0;
-  // List of key frames and their data bound
-  Map<int, Data>? keyFrames;
-  FrameData({
-    List<int>? activeFrames,
-    int? frameCount,
-    Map<int, Data>? keyFrames,
-  }) : activeFrames = activeFrames ?? [],
-       frameCount = frameCount ?? 0,
-       keyFrames = keyFrames ?? {};
+  final List<int> activeFrames;
+  final int frameCount;
+  final Map<int, Data> keyFrames;
+
+  FrameData({List<int>? activeFrames, int? frameCount, required this.keyFrames})
+    : activeFrames = activeFrames ?? [],
+      frameCount = frameCount ?? 0;
 
   FrameData copyWith({
     List<int>? activeFrames,
@@ -91,7 +95,7 @@ class FileLayer {
 
   FileLayer({LayerData? layerData, FrameData? frameData})
     : layerData = layerData ?? LayerData(),
-      frameData = frameData ?? FrameData();
+      frameData = frameData ?? FrameData(keyFrames: {});
 
   void setName(String newName) {
     layerData.LayerName = newName;

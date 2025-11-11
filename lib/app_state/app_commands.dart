@@ -2,6 +2,7 @@ import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
+import 'package:shapey/utility/drawy/drawy_path.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart';
 

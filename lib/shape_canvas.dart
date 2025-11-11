@@ -7,6 +7,7 @@ import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:shapey/utility/drawy/drawy_path.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
@@ -15,7 +16,17 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 // For undo history
 // SHAPE CANVAS
 class ShapeCanvas extends ConsumerStatefulWidget {
-  const ShapeCanvas({super.key, this.width = 100, this.height = 100});
+  final String layerID;
+  final int activeFrame;
+  final Data? currentLayerFrameData;
+  const ShapeCanvas({
+    super.key,
+    this.width = 100,
+    this.height = 100,
+    required this.layerID,
+    required this.activeFrame,
+    required this.currentLayerFrameData,
+  });
 
   final double width;
   final double height;
@@ -29,6 +40,8 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   final drawy = Drawy();
   late String stretchStarSvg;
   late String squareStarSvg;
+  List<DrawyPath>? layerPaths;
+  // late String? activeLayer;
   Vector2 MousePosition = Vector2(0, 0);
 
   PictureInfo? pictureInfo;
@@ -47,6 +60,14 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     // test draws
     // drawy.addLine([Vector2(20, 40), Vector2(449, 111), Vector2(249, 111)]);
     // drawy.addLine([Vector2(120, 40), Vector2(33, 111), Vector2(22, 900)]);
+    // try to grab the initial frame's data
+    print(
+      'grabbing frame data for ${widget.layerID} at frame ${widget.activeFrame}',
+    );
+    final FileNotifier fileModel = ref.read(fileNotifier.notifier);
+    // FileLayer? layerData = fileModel.getFileLayer(widget.layerID);
+    // Data? data = layerData?.frameData.keyFrames?[widget.activeFrame];
+
     drawy.load();
 
     super.initState();
@@ -62,6 +83,14 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     MousePosition = Vector2(details.localPosition.dx, details.localPosition.dy);
   }
 
+  // try to fetch any draw paths on the frame , if they exist
+  void updatePaths() {
+    // final FileNotifier fileModel = ref.read(fileNotifier.notifier);
+    // FileLayer? layerData = fileModel.getFileLayer(widget.layerID);
+    // layerPaths = layerData?.frameData.keyFrames?[widget.activeFrame]?.drawPaths;
+    // print(layerPaths?[0].pathPoints.length);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ActiveTool activeTool = ref.watch(
@@ -71,21 +100,25 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     final AppCommandInvoker appCommandHistory = ref.watch(
       appNotifier.select((s) => s.appCommandHistory),
     );
-    final String? activeLayer = ref.watch(
-      appNotifier.select((s) => s.activeLayer),
-    );
-    print('refresh');
-    print(activeLayer);
-    //Reloads the stage on state change
-    ref.listen(appNotifier.select((s) => s.stateChange), (prev, next) {
-      setState(() {
-        _repaintNotifier.value = !_repaintNotifier.value;
-      });
-    });
+
+    final FileNotifier fileModel = ref.read(fileNotifier.notifier);
+    // ref.listen(fileNotifier.select((s) => s.layers), (prev, next) {
+    //   setState(() {
+    //     print('layers changed, refreshing');
+    //     updatePaths();
+    //     _repaintNotifier.value = !_repaintNotifier.value;
+    //   });
+    // });
+    print("CURRENT FRAME DATA:");
+    print(widget.currentLayerFrameData);
+    // updatePaths();
+    List<DrawyPath>? drawpaths = widget.currentLayerFrameData?.drawPaths;
+
+    // drawy.updatePaths(drawpaths);
+    // activeLayer = ref.watch(appNotifier.select((s) => s.activeLayer));
 
     //This is ^ Only around since you're not directly listening to shape changes YET
     //so like this is good final activeTool = ref.watch(appNotifier.select((s) => s.activeTool));
-    // TODO: Once we link shapes tolayers, ref.listen teh shapes, and kill .stateChange
 
     // tell drawy what mode we're on for performance
     drawy.activeTool = activeTool;
@@ -98,9 +131,26 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       painter: _ShapeCanvasPainter(_repaintNotifier, drawy, pictureInfo),
     );
 
+    void action_mouse_up_or_cancel() {
+      // if (activeLayer == null) return print("no active layer");
+      if (selectMode) {
+        appCommandHistory.executeCommand(
+          DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
+        );
+      }
+      if (penMode) {
+        final fileModel = ref.read(fileNotifier.notifier);
+        appCommandHistory.executeCommand(
+          DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
+        );
+      }
+      _repaintNotifier.value = !_repaintNotifier.value;
+    }
+
     // TAP GESTURES
     var gestureDetectorWidget = GestureDetector(
       onPanDown: (details) {
+        // if (activeLayer == null) return print("no active layer");
         updateStage(details);
 
         if (penMode) {
@@ -112,38 +162,15 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
         _repaintNotifier.value = !_repaintNotifier.value;
       },
       onPanUpdate: (details) {
+        // if (activeLayer == null) return print("no active layer");
         updateStage(details);
         if (selectMode) drawy.selectMode(DrawyInteract.move, MousePosition);
         if (penMode) drawy.penMode(DrawyInteract.move, MousePosition);
         _repaintNotifier.value = !_repaintNotifier.value;
       },
-      onPanEnd: (details) {
-        if (selectMode) {
-          appCommandHistory.executeCommand(
-            DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
-          );
-        }
-        if (penMode) {
-          appCommandHistory.executeCommand(
-            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
-          );
-        }
-        _repaintNotifier.value = !_repaintNotifier.value;
-      },
+      onPanEnd: (details) => action_mouse_up_or_cancel(),
 
-      onPanCancel: () {
-        if (selectMode) {
-          appCommandHistory.executeCommand(
-            DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
-          );
-        }
-        if (penMode) {
-          appCommandHistory.executeCommand(
-            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
-          );
-        }
-        // _repaintNotifier.value = !_repaintNotifier.value;
-      },
+      onPanCancel: () => action_mouse_up_or_cancel(),
       child: sizedPaintWidget,
     );
 
@@ -166,6 +193,7 @@ class _ShapeCanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    print("PAINT");
     if (pictureInfo != null) {
       drawy.setCanvas(canvas);
       canvas.drawRect(

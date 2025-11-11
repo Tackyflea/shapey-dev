@@ -41,12 +41,54 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
     });
   }
 
+  KeyEventResult stageShortcutKeyLinks(FocusNode node, KeyEvent event) {
+    // Shift listerner
+    if (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
+        event.logicalKey == LogicalKeyboardKey.shiftRight) {
+      if (event is KeyDownEvent) {
+        ref.read(appNotifier.notifier).setShiftDown(true);
+      } else if (event is KeyUpEvent) {
+        ref.read(appNotifier.notifier).setShiftDown(false);
+      }
+    }
+    if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
+        event.logicalKey == LogicalKeyboardKey.controlRight) {
+      if (event is KeyDownEvent) {
+        ref.read(appNotifier.notifier).setCtrlDown(true);
+      } else if (event is KeyUpEvent) {
+        ref.read(appNotifier.notifier).setCtrlDown(false);
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Normal layout
     double sidePanelsY = 40;
     double titleBarSize = 25;
 
+    List<FileLayer> fileLayers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+    int activeFrame = ref.watch(appNotifier.select((s) => s.activeFrame));
+    // print("fileLayers:");
+    // print(fileLayers);
+    // print("activeFrame: $activeFrame");
+    List<Widget> canvasLayers = [];
+    // generate a canvas for each timeline layer
+    for (FileLayer layer in fileLayers) {
+      Data? currentLayerFrameData = layer.frameData.keyFrames[activeFrame];
+      canvasLayers.add(
+        ShapeCanvas(
+          width: 800,
+          height: 500,
+          layerID: layer.guid(),
+          activeFrame: activeFrame,
+          currentLayerFrameData: currentLayerFrameData,
+        ),
+      );
+    }
     TouchViewer mainViewer = TouchViewer(
       child: SizedBox(
         width: double.infinity,
@@ -55,10 +97,7 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
           alignment: Alignment(0, -0.86),
           child: Transform.scale(
             scale: 0.85,
-            child: Material(
-              elevation: 2,
-              child: ShapeCanvas(width: 800, height: 500),
-            ),
+            child: Material(elevation: 2, child: Stack(children: canvasLayers)),
           ),
         ),
       ),
@@ -134,26 +173,7 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
         actions: actionsMap,
         child: FocusScope(
           autofocus: true,
-          onKeyEvent: (node, event) {
-            // Shift listerner
-            if (event.logicalKey == LogicalKeyboardKey.shiftLeft ||
-                event.logicalKey == LogicalKeyboardKey.shiftRight) {
-              if (event is KeyDownEvent) {
-                ref.read(appNotifier.notifier).setShiftDown(true);
-              } else if (event is KeyUpEvent) {
-                ref.read(appNotifier.notifier).setShiftDown(false);
-              }
-            }
-            if (event.logicalKey == LogicalKeyboardKey.controlLeft ||
-                event.logicalKey == LogicalKeyboardKey.controlRight) {
-              if (event is KeyDownEvent) {
-                ref.read(appNotifier.notifier).setCtrlDown(true);
-              } else if (event is KeyUpEvent) {
-                ref.read(appNotifier.notifier).setCtrlDown(false);
-              }
-            }
-            return KeyEventResult.ignored;
-          },
+          onKeyEvent: (node, event) => stageShortcutKeyLinks(node, event),
           child: Stack(
             children: [
               mainViewer,
