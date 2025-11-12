@@ -19,6 +19,9 @@ class DrawyPath {
   // indicates to draw path closed or not
   var closed = false;
 
+  // indicates mouse active
+  bool isActive = false;
+
   DrawyPath({required this.pathPoints});
 
   void draw(Canvas canvasToDrawOn, Paint paintToDrawWith) {

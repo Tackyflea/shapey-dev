@@ -4,7 +4,7 @@ abstract interface class AppCommand {
   String getTitle();
 }
 
-bool printAppCommands = true;
+bool printAppCommands = false;
 
 // From https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
 class AppCommandInvoker {

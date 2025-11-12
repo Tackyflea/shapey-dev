@@ -26,7 +26,6 @@ enum DrawyGuideType { fullSquare, square, circle, testType }
 
 class Drawy {
   late Canvas canvasToDrawOn;
-  late ActiveTool activeTool = ActiveTool.selectTool;
 
   // POST loading any initial data, we save the history
   // so we have an initial state to revert to
@@ -134,7 +133,7 @@ class Drawy {
 
     // clone history at end of interation
     if (interact == DrawyInteract.end && startPath != null) {
-      checkAndClosePath(goingInReverse);
+      checkAndClosePath(activePath, goingInReverse);
       goingInReverse = false;
       savePathStates();
     }
@@ -143,8 +142,7 @@ class Drawy {
   }
 
   // close off shape if the point is to close to end of the shape
-  void checkAndClosePath(bool inReverse) {
-    final path = activePath;
+  void checkAndClosePath(DrawyPath? path, bool inReverse) {
     if (path == null || path.isClosed() || path.getPoints().length <= 2) return;
 
     final points = path.getActivePoints();
@@ -288,7 +286,7 @@ class Drawy {
     // End Drag
     if (interact == DrawyInteract.end) {
       activeBezier = DrawyBezierSelected.none;
-      checkAndClosePath(goingInReverse);
+      checkAndClosePath(activePath, goingInReverse);
       savePathStates();
     }
   }
