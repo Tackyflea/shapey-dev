@@ -12,16 +12,27 @@ const double DEFAULT_TIMELINE_DURATION = 5.0;
 
 // individual keyframe data
 class Data {
-  List<DrawyPath>? drawPaths = [];
+  final List<DrawyPath>? drawPaths;
+  final int activePath;
+
+  Data({this.drawPaths, this.activePath = -1});
+
+  Data copyWith({List<DrawyPath>? paths, int? activePath}) {
+    return Data(
+      drawPaths:
+          paths ??
+          (drawPaths != null ? List<DrawyPath>.from(drawPaths!) : null),
+      activePath: activePath ?? this.activePath,
+    );
+  }
 }
 
 // Data for the frames, if any
 class FrameData {
-  // List of currently selected frames
-  List<int>? activeFrames = [];
-  int frameCount = 0;
-  // List of key frames and their data bound
-  Map<int, Data>? keyFrames;
+  final List<int> activeFrames;
+  final int frameCount;
+  final Map<int, Data> keyFrames;
+
   FrameData({
     List<int>? activeFrames,
     int? frameCount,
@@ -36,24 +47,20 @@ class FrameData {
     Map<int, Data>? keyFrames,
   }) {
     return FrameData(
-      activeFrames: activeFrames ?? this.activeFrames,
+      activeFrames: activeFrames ?? List<int>.from(this.activeFrames),
       frameCount: frameCount ?? this.frameCount,
-      keyFrames: keyFrames ?? this.keyFrames,
+      keyFrames: keyFrames ?? Map<int, Data>.from(this.keyFrames),
     );
   }
 }
 
 // Details on the individual layer
 class LayerData {
-  // for raw tracking
-  String GUID;
-  String LayerName;
-  // active in mouse selection (ready for moving / deleting)
-  bool MultiSelectActive;
-  // locked in mouse selection (disable editing of contents)
-  bool locked;
-  // visible in scene
-  bool hidden;
+  final String GUID;
+  final String LayerName;
+  final bool MultiSelectActive;
+  final bool locked;
+  final bool hidden;
 
   LayerData({
     String? guid,
@@ -67,7 +74,6 @@ class LayerData {
        locked = locked ?? false,
        hidden = hidden ?? false;
 
-  // creates a new LayerData instance, optionally overriding any field
   LayerData copyWith({
     String? guid,
     String? layerName,
@@ -93,12 +99,29 @@ class FileLayer {
     : layerData = layerData ?? LayerData(),
       frameData = frameData ?? FrameData();
 
+  // Keep mutable setters for convenience during construction
   void setName(String newName) {
-    layerData.LayerName = newName;
+    layerData = layerData.copyWith(layerName: newName);
   }
 
   void setMultiSelect(bool onOff) {
-    layerData.MultiSelectActive = onOff;
+    layerData = layerData.copyWith(multiSelectActive: onOff);
+  }
+
+  void setFrameCount(int newCount) {
+    frameData = frameData.copyWith(frameCount: newCount);
+  }
+
+  void addKeyFrame(int frameIndex) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames);
+    newKeyFrames[frameIndex] = Data();
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
+  }
+
+  void removeKeyFrame(int frameIndex) {
+    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames);
+    newKeyFrames.remove(frameIndex);
+    frameData = frameData.copyWith(keyFrames: newKeyFrames);
   }
 
   String name() => layerData.LayerName;
@@ -113,26 +136,6 @@ class FileLayer {
       layerData: layerData ?? this.layerData,
       frameData: frameData ?? this.frameData,
     );
-  }
-
-  // Immutable, keeps history
-  void setFrameCount(int newCount) {
-    frameData = frameData.copyWith(frameCount: newCount);
-  }
-
-  // Adds a keyframe at the given frame index
-  void addKeyFrame(int frameIndex) {
-    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
-    // For now, the Data can just be empty
-    newKeyFrames[frameIndex] = Data();
-    frameData = frameData.copyWith(keyFrames: newKeyFrames);
-  }
-
-  // Removes a keyframe at the given frame index
-  void removeKeyFrame(int frameIndex) {
-    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames ?? {});
-    newKeyFrames.remove(frameIndex);
-    frameData = frameData.copyWith(keyFrames: newKeyFrames);
   }
 }
 

@@ -60,10 +60,14 @@ class AddLayerCommand implements AppCommand {
   @override
   void execute() {
     _beforeLayers = [...fileNotifier.layers];
+    _beforeActiveLayer = appNotifier.activeLayer;
+
     fileNotifier.clearLayerMultiSelection();
     fileNotifier.addLayer();
-    fileNotifier.setMultiSelectActive(fileNotifier.layers.last.guid(), true);
-    appNotifier.updateActiveLayer(fileNotifier.layers.last.guid());
+
+    final newLayerGUID = fileNotifier.layers.last.guid();
+    fileNotifier.setMultiSelectActive(newLayerGUID, true);
+    appNotifier.updateActiveLayer(newLayerGUID);
   }
 
   @override
@@ -85,7 +89,7 @@ class SetMultiSelectActiveCommand implements AppCommand {
   final bool onOff;
   final bool shiftDown;
   late final List<FileLayer> _beforeLayers;
-  late String? _beforeActiveLayer;
+  late final String? _beforeActiveLayer;
 
   SetMultiSelectActiveCommand(
     this.fileNotifier,
@@ -99,7 +103,8 @@ class SetMultiSelectActiveCommand implements AppCommand {
   void execute() {
     _beforeLayers = [...fileNotifier.layers];
     _beforeActiveLayer = appNotifier.activeLayer;
-    if (shiftDown == false) {
+
+    if (!shiftDown) {
       fileNotifier.clearLayerMultiSelection();
     }
     fileNotifier.setMultiSelectActive(layerGUID, onOff);
@@ -113,7 +118,7 @@ class SetMultiSelectActiveCommand implements AppCommand {
   }
 
   @override
-  String getTitle() => 'Toggling layer multiSelect $onOff';
+  String getTitle() => 'toggle layer multiSelect $onOff';
 }
 
 // CLEAR all LAYER multi selection
@@ -121,7 +126,7 @@ class ClearLayerMultiSelectionCommand implements AppCommand {
   final FileNotifier fileNotifier;
   final AppNotifier appNotifier;
   late final List<FileLayer> _beforeLayers;
-  late String? _beforeActiveLayer;
+  late final String? _beforeActiveLayer;
 
   ClearLayerMultiSelectionCommand(this.fileNotifier, this.appNotifier);
 
@@ -129,6 +134,7 @@ class ClearLayerMultiSelectionCommand implements AppCommand {
   void execute() {
     _beforeLayers = [...fileNotifier.layers];
     _beforeActiveLayer = appNotifier.activeLayer;
+
     fileNotifier.clearLayerMultiSelection();
     appNotifier.updateActiveLayer(null);
   }
@@ -140,29 +146,29 @@ class ClearLayerMultiSelectionCommand implements AppCommand {
   }
 
   @override
-  String getTitle() => 'cleared all LAYER multi selection';
+  String getTitle() => 'clear all layer multi selection';
 }
 
 class RemoveLayerCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
   final FileLayer layer;
   late final List<FileLayer> _beforeLayers;
 
-  RemoveLayerCommand(this.notifier, this.layer);
+  RemoveLayerCommand(this.fileNotifier, this.layer);
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
-    notifier.removeLayer(layer); // normal remove (pushes history)
+    _beforeLayers = [...fileNotifier.layers];
+    fileNotifier.removeLayer(layer); // normal remove (pushes history)
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
   }
 
   @override
-  String getTitle() => '${layer.name()} removing layer ';
+  String getTitle() => 'remove layer "${layer.name()}"';
 }
 
 class SetActiveFrameCommand implements AppCommand {
@@ -184,60 +190,59 @@ class SetActiveFrameCommand implements AppCommand {
   }
 
   @override
-  String getTitle() => 'setting frame to $frame';
+  String getTitle() => 'set active frame to $frame';
 }
 
 class AddKeyFramesCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
   final FileLayer layer;
   final Set<int> keyFrames;
   late final List<FileLayer> _beforeLayers;
 
-  AddKeyFramesCommand(this.notifier, this.layer, this.keyFrames);
+  AddKeyFramesCommand(this.fileNotifier, this.layer, this.keyFrames);
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
-    notifier.addKeyFrames(layer, keyFrames);
+    _beforeLayers = [...fileNotifier.layers];
+    fileNotifier.addKeyFrames(layer, keyFrames);
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
   }
 
   @override
-  String getTitle() => '${layer.name()} adding keyframes';
+  String getTitle() => 'add keyframes to "${layer.name()}"';
 }
 
 class RemoveKeyFramesCommand implements AppCommand {
-  final FileNotifier notifier;
+  final FileNotifier fileNotifier;
   final FileLayer layer;
   final Set<int> keyFrames;
   late final List<FileLayer> _beforeLayers;
 
-  RemoveKeyFramesCommand(this.notifier, this.layer, this.keyFrames);
+  RemoveKeyFramesCommand(this.fileNotifier, this.layer, this.keyFrames);
 
   @override
   void execute() {
-    _beforeLayers = [...notifier.layers];
-    notifier.removeKeyFrames(layer, keyFrames);
+    _beforeLayers = [...fileNotifier.layers];
+    fileNotifier.removeKeyFrames(layer, keyFrames);
   }
 
   @override
   void undo() {
-    notifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
   }
 
   @override
-  String getTitle() => '${layer.name()} removing keyframes';
+  String getTitle() => 'remove keyframes from "${layer.name()}"';
 }
 
 class AddInitialLayerCommand implements AppCommand {
   final FileNotifier fileNotifier;
   final AppNotifier appNotifier;
-
-  late FileLayer _layer;
+  late final FileLayer _layer;
 
   AddInitialLayerCommand(this.fileNotifier, this.appNotifier);
 
@@ -256,10 +261,8 @@ class AddInitialLayerCommand implements AppCommand {
   @override
   void undo() {
     // We don't actually want to undo the init state
-    // fileNotifier.removeLayer(_layer); // restore previous state
-    // appNotifier.updateActiveLayer(null); // restore previous state
   }
 
   @override
-  String getTitle() => "Add initial layer";
+  String getTitle() => "add initial layer";
 }
