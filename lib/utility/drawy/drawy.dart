@@ -74,7 +74,7 @@ class Drawy {
 
   bool goingInReverse = false;
   // Draws a pan path along mouse position points
-  void penMode(DrawyInteract interact, Vector2 mousePosition) {
+  List<DrawyPath> penMode(DrawyInteract interact, Vector2 mousePosition) {
     var startPath = activePath;
     DrawyPoint startPoint;
     List<DrawyPoint>? activePoints = startPath?.getActivePoints();
@@ -138,6 +138,8 @@ class Drawy {
       goingInReverse = false;
       savePathStates();
     }
+
+    return drawPaths;
   }
 
   // close off shape if the point is to close to end of the shape

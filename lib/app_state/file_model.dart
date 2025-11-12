@@ -314,6 +314,37 @@ class FileNotifier extends Notifier<FileModel> {
     state = state.copyWith(layers: layers);
   }
 
+  void updateLayer(String layerGUID, FileLayer Function(FileLayer) updateFn) {
+    final current = state;
+    final updatedLayers = current.layers.map((layer) {
+      if (layer.guid() == layerGUID) {
+        return updateFn(layer); // Apply the update function
+      }
+      return layer;
+    }).toList();
+
+    final updatedHistory = [...current.layersHistory, current.layers];
+
+    state = current.copyWith(
+      layers: updatedLayers,
+      layersHistory: updatedHistory,
+    );
+  }
+
+  void setLayerPaths(String layerGUID, int frame, List<DrawyPath>? newPaths) {
+    updateLayer(layerGUID, (layer) {
+      final newKeyFrames = {...layer.frameData.keyFrames};
+      newKeyFrames[frame] = Data(
+        drawPaths: newPaths,
+        activePath: (newPaths?.length ?? 0) - 1,
+      );
+
+      return layer.copyWith(
+        frameData: layer.frameData.copyWith(keyFrames: newKeyFrames),
+      );
+    });
+  }
+
   String get name => state.fileName;
   int get fps => state.fps;
   double get timelineDuration => state.timelineDuration;

@@ -124,8 +124,16 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
           );
         }
         if (penMode) {
+          final fileModel = ref.read(fileNotifier.notifier);
           appCommandHistory.executeCommand(
-            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
+            DrawyPenCommand(
+              drawy,
+              fileModel,
+              DrawyInteract.end,
+              MousePosition,
+              null,
+              null,
+            ),
           );
         }
         _repaintNotifier.value = !_repaintNotifier.value;
@@ -138,8 +146,16 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
           );
         }
         if (penMode) {
+          final fileModel = ref.read(fileNotifier.notifier);
           appCommandHistory.executeCommand(
-            DrawyPenCommand(drawy, DrawyInteract.end, MousePosition),
+            DrawyPenCommand(
+              drawy,
+              fileModel,
+              DrawyInteract.end,
+              MousePosition,
+              null,
+              null,
+            ),
           );
         }
         // _repaintNotifier.value = !_repaintNotifier.value;

@@ -9,19 +9,42 @@ import 'package:vector_math/vector_math.dart';
 // Execute and undo pen draw
 class DrawyPenCommand implements AppCommand {
   final Drawy _receiver;
+  final FileNotifier fileNotifier;
   final Vector2 newPosition;
   final DrawyInteract _newInteraction;
+  final int? currentFrame; // todo, link
+  final String? layerGUID; // todo, link
 
-  DrawyPenCommand(this._receiver, this._newInteraction, this.newPosition);
+  late final List<FileLayer> _beforeLayers;
+
+  DrawyPenCommand(
+    this._receiver,
+    this.fileNotifier,
+    this._newInteraction,
+    this.newPosition,
+    this.currentFrame,
+    this.layerGUID,
+  );
 
   @override
   void execute() {
-    _receiver.penMode(_newInteraction, newPosition);
+    // Snapshot file state before changes
+    _beforeLayers = [...fileNotifier.layers];
+
+    // Drawy does its internal thing (keeps its own state for now)
+    final drawPaths = _receiver.penMode(_newInteraction, newPosition);
+
+    // Also update the file in parallel , TODO HOOKUP
+    // fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
   }
 
   @override
   void undo() {
+    // Undo Drawy's internal state
     _receiver.undoPen();
+
+    // Undo file state
+    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
   }
 
   @override
