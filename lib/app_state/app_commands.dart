@@ -1,6 +1,7 @@
 import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
+import 'package:shapey/shape_canvas.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart';
@@ -8,19 +9,17 @@ import 'package:vector_math/vector_math.dart';
 //https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
 // Execute and undo pen draw
 class DrawyPenCommand implements AppCommand {
-  final Drawy _receiver;
+  final ShapeCanvasState _shapeCanvas;
   final FileNotifier fileNotifier;
   final Vector2 newPosition;
-  final DrawyInteract _newInteraction;
   final int? currentFrame; // todo, link
   final String? layerGUID; // todo, link
 
   late final List<FileLayer> _beforeLayers;
 
   DrawyPenCommand(
-    this._receiver,
+    this._shapeCanvas,
     this.fileNotifier,
-    this._newInteraction,
     this.newPosition,
     this.currentFrame,
     this.layerGUID,
@@ -32,7 +31,7 @@ class DrawyPenCommand implements AppCommand {
     _beforeLayers = [...fileNotifier.layers];
 
     // Drawy does its internal thing (keeps its own state for now)
-    final drawPaths = _receiver.penMode(_newInteraction, newPosition);
+    final drawPaths = _shapeCanvas.penMode(newPosition);
 
     // Also update the file in parallel , TODO HOOKUP
     // fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
@@ -41,7 +40,7 @@ class DrawyPenCommand implements AppCommand {
   @override
   void undo() {
     // Undo Drawy's internal state
-    _receiver.undoPen();
+    _shapeCanvas.undoPen();
 
     // Undo file state
     fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
@@ -52,20 +51,19 @@ class DrawyPenCommand implements AppCommand {
 }
 
 class DrawySelectCommand implements AppCommand {
-  final Drawy _receiver;
+  final ShapeCanvasState _shapeCanvas;
   final Vector2 newPosition;
-  final DrawyInteract _newInteraction;
 
-  DrawySelectCommand(this._receiver, this._newInteraction, this.newPosition);
+  DrawySelectCommand(this._shapeCanvas, this.newPosition);
 
   @override
   void execute() {
-    _receiver.selectMode(_newInteraction, newPosition);
+    _shapeCanvas.selectMode(newPosition);
   }
 
   @override
   void undo() {
-    _receiver.undoSelect();
+    _shapeCanvas.undoSelect();
   }
 
   @override

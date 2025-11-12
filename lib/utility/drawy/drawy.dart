@@ -25,8 +25,6 @@ enum DrawyBezierSelected { none, A, B }
 enum DrawyGuideType { fullSquare, square, circle, testType }
 
 class Drawy {
-  late Canvas canvasToDrawOn;
-
   // POST loading any initial data, we save the history
   // so we have an initial state to revert to
   void load() {
@@ -52,11 +50,7 @@ class Drawy {
     ..color = Color.fromARGB(255, 28, 134, 236)
     ..strokeWidth = 2
     ..style = PaintingStyle.stroke;
-  void setCanvas(Canvas newCtx) {
-    canvasToDrawOn = newCtx;
-  }
-
-  void line(Offset p1, Offset p2) =>
+  void line(Canvas canvasToDrawOn, Offset p1, Offset p2) =>
       canvasToDrawOn.drawLine(p1, p2, PEN_DEFAULT_STROKE);
   void addLine(List<Vector2> positions) {
     // so we can keep drawypoints as an internal class
@@ -302,7 +296,7 @@ class Drawy {
     return false;
   }
 
-  void update() {
+  void update(Canvas ctx) {
     // DRAW
 
     // draw all paths
@@ -310,7 +304,7 @@ class Drawy {
     var pathCount = drawPaths.length;
     for (int i = 0; i < pathCount; i++) {
       var path = drawPaths[i];
-      path.draw(canvasToDrawOn, PEN_DEFAULT_STROKE);
+      path.draw(ctx, PEN_DEFAULT_STROKE);
 
       // don't draw anything else if path isn't selected
       if (activePath == null || path != activePath) {
@@ -325,17 +319,17 @@ class Drawy {
           final cubicEnd = pt.thisPointCubicPointEnd;
           final cubicStart = pt.nextPointCubicPointStart;
 
-          drawGuidePoint(DrawyGuideType.fullSquare, pt.getPosition());
+          drawGuidePoint(ctx, DrawyGuideType.fullSquare, pt.getPosition());
 
           for (final p in [cubicEnd, cubicStart]) {
             if (p != null &&
                 pt.getPosition().distanceToSquared(p) >
                     MIN_DISTANCE_TO_START_CURVE) {
-              drawGuidePoint(DrawyGuideType.circle, p);
+              drawGuidePoint(ctx, DrawyGuideType.circle, p);
             }
           }
         } else {
-          drawGuidePoint(DrawyGuideType.square, pt.getPosition());
+          drawGuidePoint(ctx, DrawyGuideType.square, pt.getPosition());
         }
 
         // TEMP v Delete when not needed
@@ -359,10 +353,7 @@ class Drawy {
         );
 
         textPainter.layout();
-        textPainter.paint(
-          canvasToDrawOn,
-          Offset(pt.getPosition().x, pt.getPosition().y),
-        );
+        textPainter.paint(ctx, Offset(pt.getPosition().x, pt.getPosition().y));
       }
     }
   }
@@ -476,7 +467,11 @@ class Drawy {
     ..strokeWidth = 1
     ..style = PaintingStyle.stroke;
 
-  void drawGuidePoint(DrawyGuideType typeToDraw, Vector2? position) {
+  void drawGuidePoint(
+    Canvas ctx,
+    DrawyGuideType typeToDraw,
+    Vector2? position,
+  ) {
     if (position == null) {
       return;
     }
@@ -484,26 +479,26 @@ class Drawy {
     Offset pos = Offset(position.x, position.y);
 
     if (typeToDraw == DrawyGuideType.square) {
-      canvasToDrawOn.drawRect(
+      ctx.drawRect(
         Rect.fromCenter(center: pos, width: size, height: size),
         guidePaintSemiFull,
       );
 
-      canvasToDrawOn.drawRect(
+      ctx.drawRect(
         Rect.fromCenter(center: pos, width: size, height: size),
         guidePaintStroke,
       );
     } else if (typeToDraw == DrawyGuideType.fullSquare) {
-      canvasToDrawOn.drawRect(
+      ctx.drawRect(
         Rect.fromCenter(center: pos, width: size, height: size),
         guidePaintFull,
       );
     } else if (typeToDraw == DrawyGuideType.circle) {
-      canvasToDrawOn.drawCircle(pos, size / 2, guidePaintSemiFull);
-      canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
+      ctx.drawCircle(pos, size / 2, guidePaintSemiFull);
+      ctx.drawCircle(pos, size / 2, guidePaintStroke);
     } else if (typeToDraw == DrawyGuideType.testType) {
-      canvasToDrawOn.drawCircle(pos, size / 2, redPaintFull);
-      canvasToDrawOn.drawCircle(pos, size / 2, guidePaintStroke);
+      ctx.drawCircle(pos, size / 2, redPaintFull);
+      ctx.drawCircle(pos, size / 2, guidePaintStroke);
     }
   }
 }

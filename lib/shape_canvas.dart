@@ -7,6 +7,7 @@ import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/enums/e_active_tool.dart';
+import 'package:shapey/utility/drawy/drawy_path.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
@@ -15,10 +16,8 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 // For undo history
 // SHAPE CANVAS
 class ShapeCanvas extends ConsumerStatefulWidget {
-  const ShapeCanvas({super.key, this.width = 100, this.height = 100});
-
-  final double width;
-  final double height;
+  final Size renderSize;
+  const ShapeCanvas({super.key, required this.renderSize});
 
   @override
   ShapeCanvasState createState() => ShapeCanvasState();
@@ -64,24 +63,26 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     );
 
     if (activeTool == ActiveTool.selectTool) {
-      appCommandHistory.executeCommand(
-        DrawySelectCommand(drawy, DrawyInteract.end, MousePosition),
-      );
+      appCommandHistory.executeCommand(DrawySelectCommand(this, MousePosition));
     }
     if (activeTool == ActiveTool.penTool) {
       final fileModel = ref.read(fileNotifier.notifier);
       appCommandHistory.executeCommand(
-        DrawyPenCommand(
-          drawy,
-          fileModel,
-          DrawyInteract.end,
-          MousePosition,
-          null,
-          null,
-        ),
+        DrawyPenCommand(this, fileModel, MousePosition, null, null),
       );
     }
   }
+
+  List<DrawyPath> penMode(Vector2 mousePosition) {
+    return drawy.penMode(DrawyInteract.end, mousePosition);
+  }
+
+  void selectMode(Vector2 mousePosition) {
+    drawy.selectMode(DrawyInteract.end, mousePosition);
+  }
+
+  void undoPen() => drawy.undoPen();
+  void undoSelect() => drawy.undoSelect();
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +103,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
     //RESIZED SHAPE CANVAS
     var sizedPaintWidget = CustomPaint(
-      size: Size(widget.width, widget.height),
+      size: widget.renderSize,
       painter: _ShapeCanvasPainter(_repaintNotifier, drawy),
     );
 
@@ -123,29 +124,9 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
 class _ShapeCanvasPainter extends CustomPainter {
   final Drawy drawy;
-
-  //unneeded later
-  final Paint boxPaint = Paint()
-    ..color = Colors
-        .blue // Set the desired color (e.g., blue)
-    ..style = PaintingStyle.fill; // Fill the rectangle
-
   _ShapeCanvasPainter(Listenable repaint, this.drawy) : super(repaint: repaint);
-
   @override
-  void paint(Canvas canvas, Size size) {
-    drawy.setCanvas(canvas);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Paint()..color = Colors.white,
-    );
-    canvas.save();
-    // el.ctx.scale(scale, scale);
-    canvas.drawRect(Rect.fromLTWH(0, 0, 20, 20), boxPaint);
-    // drawy.line(Offset(133, 55), Offset(mousePosition.x, mousePosition.y));
-    drawy.update();
-    canvas.restore();
-  }
+  void paint(Canvas canvas, Size size) => drawy.update(canvas);
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;

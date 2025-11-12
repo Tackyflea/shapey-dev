@@ -57,7 +57,7 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
             scale: 0.85,
             child: Material(
               elevation: 2,
-              child: ShapeCanvas(width: 800, height: 500),
+              child: ShapeCanvas(renderSize: Size(800, 500)),
             ),
           ),
         ),
