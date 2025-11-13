@@ -28,10 +28,6 @@ class DrawyPenCommand implements AppCommand {
 
   @override
   void execute() {
-    _beforeLayers = fileNotifier.layers
-        .map((layer) => layer.deepCopy())
-        .toList();
-
     print(
       "EXECUTE: Before penMode, drawy has ${_shapeCanvas.drawy.drawPaths.length} paths",
     );

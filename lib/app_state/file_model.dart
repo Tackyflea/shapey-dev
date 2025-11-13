@@ -15,10 +15,6 @@ class Data {
   final List<DrawyPath> drawPaths;
 
   Data({required this.drawPaths});
-  Data deepCopy() {
-    return Data(drawPaths: drawPaths.map((path) => path.copy()).toList());
-  }
-
   Data copyWith({List<DrawyPath>? drawPaths}) {
     return Data(drawPaths: drawPaths ?? List<DrawyPath>.from(this.drawPaths));
   }
@@ -37,16 +33,6 @@ class FrameData {
   }) : activeFrames = activeFrames ?? [],
        frameCount = frameCount ?? 0,
        keyFrames = keyFrames ?? {};
-
-  FrameData deepCopy() {
-    return FrameData(
-      activeFrames: [...activeFrames],
-      frameCount: frameCount,
-      keyFrames: keyFrames.map(
-        (frame, data) => MapEntry(frame, data.deepCopy()),
-      ),
-    );
-  }
 
   FrameData copyWith({
     List<int>? activeFrames,
@@ -137,13 +123,6 @@ class FileLayer {
   bool isLocked() => layerData.locked;
   bool isHidden() => layerData.hidden;
   int frameCount() => frameData.frameCount;
-
-  FileLayer deepCopy() {
-    return FileLayer(
-      layerData: layerData.copyWith(), // primitives are fine
-      frameData: frameData.deepCopy(),
-    );
-  }
 
   FileLayer copyWith({LayerData? layerData, FrameData? frameData}) {
     return FileLayer(
@@ -352,7 +331,9 @@ class FileNotifier extends Notifier<FileModel> {
       newKeyFrames[frame] = Data(
         drawPaths: newPaths?.map((path) => path.copy()).toList() ?? [],
       );
-      return layer.deepCopy();
+      return layer.copyWith(
+        paths: layer.layerData.copyWith(multiSelectActive: onOff),
+      );
     });
   }
 
