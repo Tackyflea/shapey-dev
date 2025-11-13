@@ -43,7 +43,7 @@ void action_drawy_pen(
   ShapeCanvasState shapeCanvasState,
   WidgetRef ref,
   Vector2 MousePosition,
-  String layeGuid,
+  FileLayer layer,
   int currentFrame,
 ) {
   ref
@@ -54,7 +54,7 @@ void action_drawy_pen(
           ref.read(fileNotifier.notifier),
           MousePosition,
           currentFrame,
-          layeGuid,
+          layer,
         ),
       );
 }

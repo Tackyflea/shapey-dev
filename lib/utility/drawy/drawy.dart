@@ -27,13 +27,14 @@ enum DrawyGuideType { fullSquare, square, circle, testType }
 class Drawy {
   void load(Data? frameData) {
     if (frameData == null) {
-      print("Drawy: No Frame data");
+      // print("Drawy: No Frame data");
       drawPaths = [];
       return;
     }
-    print("Drawy: key frame (possibly empty)");
-    print("Drawy: Path Length${frameData.drawPaths.length}");
-    drawPaths = frameData.drawPaths; // ← Back to reference (it's ok now!)
+    // print("Drawy: key frame (possibly empty)");
+    // print("Drawy: Path Length${frameData.drawPaths.length}");
+    // drawPaths = frameData.drawPaths; // ← Back to reference (it's ok now!)
+    drawPaths = frameData.drawPaths.map((p) => p.copy()).toList();
   }
 
   // Generic list of paths to draw for testing
@@ -199,7 +200,7 @@ class Drawy {
     // if the points havent been assigned, IE on Start
     if (selectPathToManipulate == null || selectPointToManipulate == null) {
       // check for a nearby point first
-      print('attempting to find a path');
+      // print('attempting to find a path');
       var nearestDistance = double.infinity;
       DrawyPath? nearestPath;
       DrawyPoint? nearestPoint;
@@ -304,13 +305,13 @@ class Drawy {
 
   void update(Canvas ctx) {
     // DRAW
-
+    // print("RENDERING: ${drawPaths.length} paths");
     // draw all paths
     // Todo , swap this with a static list
     var pathCount = drawPaths.length;
     for (int i = 0; i < pathCount; i++) {
+      // print("  Path $i has ${drawPaths[i].pathPoints.length} points");
       var path = drawPaths[i];
-      print("Path Details:");
       path.draw(ctx, PEN_DEFAULT_STROKE);
 
       // don't draw anything else if path isn't selected
@@ -322,7 +323,6 @@ class Drawy {
       var pointCount = path.pathPoints.length;
       for (int y = 0; y < pointCount; y++) {
         DrawyPoint pt = path.pathPoints[y];
-        print(pt.getPosition());
         if (pt.isActive()) {
           final cubicEnd = pt.thisPointCubicPointEnd;
           final cubicStart = pt.nextPointCubicPointStart;

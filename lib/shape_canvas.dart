@@ -73,11 +73,19 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     );
 
     if (activeTool == ActiveTool.selectTool) {
-      appCommandHistory.executeCommand(DrawySelectCommand(this, MousePosition));
+      appCommandHistory.executeCommand(
+        DrawySelectCommand(
+          this,
+          ref.read(fileNotifier.notifier),
+          MousePosition,
+          widget.currentFrame,
+          widget.layerData,
+        ),
+      );
     }
     if (activeTool == ActiveTool.penTool) {
-      print("fetching data");
-      print(activeFrameData);
+      // print("fetching data");
+      // print(activeFrameData);
       // if no keyframe exists when drawing, add one
       if (activeFrameData == null) {
         action_add_keyframes(ref, widget.layerData, {widget.currentFrame});
@@ -86,7 +94,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
         this,
         ref,
         MousePosition,
-        widget.layerData.guid(),
+        widget.layerData,
         widget.currentFrame,
       );
     }
@@ -102,11 +110,8 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    print("stage rebuilt. Active frame ${widget.currentFrame}");
-
     activeFrameData = widget.layerData.frameData.keyFrames[widget.currentFrame];
     drawy.load(activeFrameData);
-
     final ActiveTool activeTool = ref.watch(
       appNotifier.select((s) => s.activeTool),
     );

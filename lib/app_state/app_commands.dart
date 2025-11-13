@@ -8,36 +8,44 @@ import 'package:vector_math/vector_math.dart';
 
 //https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
 // Execute and undo pen draw
-
 class DrawyPenCommand implements AppCommand {
   final ShapeCanvasState _shapeCanvas;
   final FileNotifier fileNotifier;
   final Vector2 newPosition;
   final int currentFrame;
-  final String layerGUID;
-
-  late final List<FileLayer> _beforeLayers;
+  final FileLayer layer;
+  late final FileLayer _beforeLayer;
 
   DrawyPenCommand(
     this._shapeCanvas,
     this.fileNotifier,
     this.newPosition,
     this.currentFrame,
-    this.layerGUID,
-  );
+    this.layer,
+  ) {
+    _beforeLayer = fileNotifier.getLayer(layer.guid()).deepCopy();
+  }
 
   @override
   void execute() {
-    _beforeLayers = [...fileNotifier.layers];
-
     final drawPaths = _shapeCanvas.penMode(newPosition);
+    fileNotifier.updateLayerPathsWithClone(
+      layer.guid(),
+      currentFrame,
+      drawPaths,
+    );
 
-    fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
+    final updatedData = fileNotifier
+        .getLayer(layer.guid())
+        .frameData
+        .keyFrames[currentFrame];
+    _shapeCanvas.drawy.load(updatedData);
   }
 
   @override
   void undo() {
-    fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
+    fileNotifier.restoreLayer(layer.guid(), _beforeLayer);
+    _shapeCanvas.drawy.load(_beforeLayer.frameData.keyFrames[currentFrame]);
   }
 
   @override
@@ -46,22 +54,46 @@ class DrawyPenCommand implements AppCommand {
 
 class DrawySelectCommand implements AppCommand {
   final ShapeCanvasState _shapeCanvas;
+  final FileNotifier fileNotifier;
   final Vector2 newPosition;
+  final int currentFrame;
+  final FileLayer layer;
+  late final FileLayer _beforeLayer;
 
-  DrawySelectCommand(this._shapeCanvas, this.newPosition);
+  DrawySelectCommand(
+    this._shapeCanvas,
+    this.fileNotifier,
+    this.newPosition,
+    this.currentFrame,
+    this.layer,
+  ) {
+    _beforeLayer = fileNotifier.getLayer(layer.guid()).deepCopy();
+  }
 
   @override
   void execute() {
     _shapeCanvas.selectMode(newPosition);
+    final drawPaths = _shapeCanvas.drawy.drawPaths;
+    fileNotifier.updateLayerPathsWithClone(
+      layer.guid(),
+      currentFrame,
+      drawPaths,
+    );
+    final updatedData = fileNotifier
+        .getLayer(layer.guid())
+        .frameData
+        .keyFrames[currentFrame];
+    _shapeCanvas.drawy.load(updatedData);
   }
 
   @override
   void undo() {
-    // TODO: IMPLEMENT
+    fileNotifier.restoreLayer(layer.guid(), _beforeLayer);
+    _shapeCanvas.drawy.load(_beforeLayer.frameData.keyFrames[currentFrame]);
   }
 
   @override
-  String getTitle() => 'select pen point at $newPosition';
+  String getTitle() => 'move point to $newPosition';
 }
 
 class AddLayerCommand implements AppCommand {

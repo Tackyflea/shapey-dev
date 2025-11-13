@@ -130,6 +130,22 @@ class FileLayer {
       frameData: frameData ?? this.frameData,
     );
   }
+
+  FileLayer deepCopy() {
+    return FileLayer(
+      layerData: layerData.copyWith(),
+      frameData: FrameData(
+        activeFrames: [...frameData.activeFrames],
+        frameCount: frameData.frameCount,
+        keyFrames: frameData.keyFrames.map((frame, data) {
+          return MapEntry(
+            frame,
+            Data(drawPaths: data.drawPaths.map((path) => path.copy()).toList()),
+          );
+        }),
+      ),
+    );
+  }
 }
 
 class FileModel {
@@ -289,6 +305,25 @@ class FileNotifier extends Notifier<FileModel> {
       layersHistory: updatedHistory,
     );
     return index;
+  }
+
+  FileLayer getLayer(String guid) {
+    return state.layers.firstWhere((l) => l.guid() == guid);
+  }
+
+  void updateLayerPathsWithClone(
+    String layerGUID,
+    int frame,
+    List<DrawyPath> paths,
+  ) {
+    setLayerPaths(layerGUID, frame, paths.map((p) => p.copy()).toList());
+  }
+
+  void restoreLayer(String layerGUID, FileLayer layer) {
+    final restoredLayers = state.layers
+        .map((l) => l.guid() == layerGUID ? layer : l)
+        .toList();
+    restoreLayersWithoutHistory(restoredLayers);
   }
 
   // insert at index (records history)

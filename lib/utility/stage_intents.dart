@@ -18,7 +18,6 @@ class UndoAction extends Action<UndoIntent> {
       appNotifier.select((s) => s.appCommandHistory),
     );
     appCommandHistory.undo();
-    print('undo');
     // to indicate overall state changed
     // To refresh the canvas
     ref.read(appNotifier.notifier).stateChanged();
