@@ -10,6 +10,7 @@ import 'package:shapey/enums/e_active_tool.dart';
 import 'package:shapey/utility/drawy/drawy_path.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:shapey/utility/drawy/drawy.dart';
+import 'package:shapey/widgets/timeline/timeline_actions.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 // Todo: Implement this maybe https://github.com/Deatsilence/flutter-design-patterns?tab=readme-ov-file#momento
@@ -17,7 +18,14 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 // SHAPE CANVAS
 class ShapeCanvas extends ConsumerStatefulWidget {
   final Size renderSize;
-  const ShapeCanvas({super.key, required this.renderSize});
+  final FileLayer layerData;
+  final int currentFrame;
+  const ShapeCanvas({
+    super.key,
+    required this.renderSize,
+    required this.layerData,
+    required this.currentFrame,
+  });
 
   @override
   ShapeCanvasState createState() => ShapeCanvasState();
@@ -26,13 +34,13 @@ class ShapeCanvas extends ConsumerStatefulWidget {
 class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
   final ValueNotifier<bool> _repaintNotifier = ValueNotifier(false);
   late final Drawy drawy;
+  late Data? activeFrameData;
   Vector2 MousePosition = Vector2(0, 0);
 
   @override
   void initState() {
     print("setup drawy");
     drawy = Drawy();
-    drawy.load();
 
     super.initState();
   }
@@ -50,7 +58,9 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     var penMode = tool == ActiveTool.penTool;
     var selectMode = tool == ActiveTool.selectTool;
 
-    if (penMode) drawy.penMode(interactType, MousePosition);
+    if (penMode) {
+      drawy.penMode(interactType, MousePosition);
+    }
     if (selectMode) drawy.selectMode(interactType, MousePosition);
 
     _repaintNotifier.value = !_repaintNotifier.value;
@@ -66,9 +76,18 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       appCommandHistory.executeCommand(DrawySelectCommand(this, MousePosition));
     }
     if (activeTool == ActiveTool.penTool) {
-      final fileModel = ref.read(fileNotifier.notifier);
-      appCommandHistory.executeCommand(
-        DrawyPenCommand(this, fileModel, MousePosition, null, null),
+      print("fetching data");
+      print(activeFrameData);
+      // if no keyframe exists when drawing, add one
+      if (activeFrameData == null) {
+        action_add_keyframes(ref, widget.layerData, {widget.currentFrame});
+      }
+      action_drawy_pen(
+        this,
+        ref,
+        MousePosition,
+        widget.layerData.guid(),
+        widget.currentFrame,
       );
     }
   }
@@ -81,11 +100,13 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     drawy.selectMode(DrawyInteract.end, mousePosition);
   }
 
-  void undoPen() => drawy.undoPen();
-  void undoSelect() => drawy.undoSelect();
-
   @override
   Widget build(BuildContext context) {
+    print("stage rebuilt. Active frame ${widget.currentFrame}");
+
+    activeFrameData = widget.layerData.frameData.keyFrames[widget.currentFrame];
+    drawy.load(activeFrameData);
+
     final ActiveTool activeTool = ref.watch(
       appNotifier.select((s) => s.activeTool),
     );
@@ -104,7 +125,7 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     //RESIZED SHAPE CANVAS
     var sizedPaintWidget = CustomPaint(
       size: widget.renderSize,
-      painter: _ShapeCanvasPainter(_repaintNotifier, drawy),
+      painter: _ShapeCanvasPainter(_repaintNotifier, drawy: drawy),
     );
 
     // TAP GESTURES
@@ -124,7 +145,8 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
 
 class _ShapeCanvasPainter extends CustomPainter {
   final Drawy drawy;
-  _ShapeCanvasPainter(Listenable repaint, this.drawy) : super(repaint: repaint);
+  _ShapeCanvasPainter(Listenable repaint, {required this.drawy})
+    : super(repaint: repaint);
   @override
   void paint(Canvas canvas, Size size) => drawy.update(canvas);
 

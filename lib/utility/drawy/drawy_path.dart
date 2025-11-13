@@ -103,7 +103,6 @@ class DrawyPath {
       pathPoints: pathPoints.map((point) => point.copy()).toList(),
     );
     pathCopy.closed = closed;
-
     return pathCopy;
   }
 

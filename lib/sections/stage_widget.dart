@@ -46,7 +46,26 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
     // Normal layout
     double sidePanelsY = 40;
     double titleBarSize = 25;
+    final List<FileLayer> layers = ref.watch(
+      fileNotifier.select((s) => s.layers),
+    );
+    int currentFrame = ref.watch(appNotifier.select((s) => s.activeFrame));
 
+    List<Widget> layersGroup = [];
+    var stageSize = Size(800, 500);
+    // generate canvases for each layer data
+    for (var layer in layers) {
+      layersGroup.add(
+        Align(
+          alignment: Alignment.center,
+          child: ShapeCanvas(
+            renderSize: stageSize,
+            layerData: layer,
+            currentFrame: currentFrame,
+          ),
+        ),
+      );
+    }
     TouchViewer mainViewer = TouchViewer(
       child: SizedBox(
         width: double.infinity,
@@ -57,7 +76,10 @@ class _StageWidgetState extends ConsumerState<StageWidget> {
             scale: 0.85,
             child: Material(
               elevation: 2,
-              child: ShapeCanvas(renderSize: Size(800, 500)),
+              child: SizedBox.fromSize(
+                size: stageSize,
+                child: Stack(children: layersGroup),
+              ),
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
@@ -24,10 +25,15 @@ enum DrawyBezierSelected { none, A, B }
 enum DrawyGuideType { fullSquare, square, circle, testType }
 
 class Drawy {
-  // POST loading any initial data, we save the history
-  // so we have an initial state to revert to
-  void load() {
-    savePathStates();
+  void load(Data? frameData) {
+    if (frameData == null) {
+      print("Drawy: No Frame data");
+      drawPaths = [];
+      return;
+    }
+    print("Drawy: key frame (possibly empty)");
+    print("Drawy: Path Length${frameData.drawPaths.length}");
+    drawPaths = frameData.drawPaths; // ← Back to reference (it's ok now!)
   }
 
   // Generic list of paths to draw for testing
@@ -46,7 +52,6 @@ class Drawy {
   DrawyBezierSelected activeBezier =
       DrawyBezierSelected.none; // for tweaking paths
 
-  List<List<DrawyPath>> drawPathHistory = [];
   var PEN_DEFAULT_STROKE = Paint()
     ..color = Color.fromARGB(255, 28, 134, 236)
     ..strokeWidth = 2
@@ -137,7 +142,6 @@ class Drawy {
     if (interact == DrawyInteract.end && startPath != null) {
       checkAndClosePath(startPath, goingInReverse);
       goingInReverse = false;
-      savePathStates();
     }
 
     return drawPaths;
@@ -166,30 +170,6 @@ class Drawy {
       // Note: Commeting out for now, until we figure out how to make individual curves
       // Now when we close the curves overlap each other
       // path.close();
-    }
-  }
-
-  // Saves a history of the paths on stage
-  // a history of active paths, AND a history of active points
-  // TODO: Limit history count to save on memory
-  // TODO: Make active point as part of the draw path since they're connected (and you can have multiple)
-  // TODO: Make active path part of path, since you could have multiple paths selected
-  void savePathStates() {
-    // save paths
-    drawPathHistory.add(drawPaths.map((path) => path.copy()).toList());
-  }
-
-  void undoPen() => revertPathStates();
-  void undoSelect() => revertPathStates();
-
-  void revertPathStates() {
-    if (drawPathHistory.length >= 2) {
-      drawPathHistory.removeLast();
-
-      // Get the last state
-      drawPaths = drawPathHistory.last
-          .map((path) => path.copy()..convertPointsToPath())
-          .toList();
     }
   }
 
@@ -304,7 +284,6 @@ class Drawy {
     // End Drag
     if (interact == DrawyInteract.end) {
       checkAndClosePath(selectPathToManipulate!, goingInReverse);
-      savePathStates();
 
       activeBezier = DrawyBezierSelected.none;
       selectDragOn = false;
@@ -331,6 +310,7 @@ class Drawy {
     var pathCount = drawPaths.length;
     for (int i = 0; i < pathCount; i++) {
       var path = drawPaths[i];
+      print("Path Details:");
       path.draw(ctx, PEN_DEFAULT_STROKE);
 
       // don't draw anything else if path isn't selected
@@ -342,6 +322,7 @@ class Drawy {
       var pointCount = path.pathPoints.length;
       for (int y = 0; y < pointCount; y++) {
         DrawyPoint pt = path.pathPoints[y];
+        print(pt.getPosition());
         if (pt.isActive()) {
           final cubicEnd = pt.thisPointCubicPointEnd;
           final cubicStart = pt.nextPointCubicPointStart;

@@ -12,18 +12,15 @@ const double DEFAULT_TIMELINE_DURATION = 5.0;
 
 // individual keyframe data
 class Data {
-  final List<DrawyPath>? drawPaths;
-  final int activePath;
+  final List<DrawyPath> drawPaths;
 
-  Data({this.drawPaths, this.activePath = -1});
+  Data({required this.drawPaths});
+  Data deepCopy() {
+    return Data(drawPaths: drawPaths.map((path) => path.copy()).toList());
+  }
 
-  Data copyWith({List<DrawyPath>? paths, int? activePath}) {
-    return Data(
-      drawPaths:
-          paths ??
-          (drawPaths != null ? List<DrawyPath>.from(drawPaths!) : null),
-      activePath: activePath ?? this.activePath,
-    );
+  Data copyWith({List<DrawyPath>? drawPaths}) {
+    return Data(drawPaths: drawPaths ?? List<DrawyPath>.from(this.drawPaths));
   }
 }
 
@@ -40,6 +37,16 @@ class FrameData {
   }) : activeFrames = activeFrames ?? [],
        frameCount = frameCount ?? 0,
        keyFrames = keyFrames ?? {};
+
+  FrameData deepCopy() {
+    return FrameData(
+      activeFrames: [...activeFrames],
+      frameCount: frameCount,
+      keyFrames: keyFrames.map(
+        (frame, data) => MapEntry(frame, data.deepCopy()),
+      ),
+    );
+  }
 
   FrameData copyWith({
     List<int>? activeFrames,
@@ -114,7 +121,7 @@ class FileLayer {
 
   void addKeyFrame(int frameIndex) {
     final newKeyFrames = Map<int, Data>.from(frameData.keyFrames);
-    newKeyFrames[frameIndex] = Data();
+    newKeyFrames[frameIndex] = Data(drawPaths: []);
     frameData = frameData.copyWith(keyFrames: newKeyFrames);
   }
 
@@ -130,6 +137,13 @@ class FileLayer {
   bool isLocked() => layerData.locked;
   bool isHidden() => layerData.hidden;
   int frameCount() => frameData.frameCount;
+
+  FileLayer deepCopy() {
+    return FileLayer(
+      layerData: layerData.copyWith(), // primitives are fine
+      frameData: frameData.deepCopy(),
+    );
+  }
 
   FileLayer copyWith({LayerData? layerData, FrameData? frameData}) {
     return FileLayer(
@@ -226,7 +240,7 @@ class FileNotifier extends Notifier<FileModel> {
       if (l == layer) {
         final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames ?? {});
         for (final index in frameIndices) {
-          newKeyFrames[index] = Data();
+          newKeyFrames[index] = Data(drawPaths: []);
         }
 
         final updatedFrameData = l.frameData.copyWith(keyFrames: newKeyFrames);
@@ -332,16 +346,13 @@ class FileNotifier extends Notifier<FileModel> {
   }
 
   void setLayerPaths(String layerGUID, int frame, List<DrawyPath>? newPaths) {
+    print("setLayerPaths: Saving ${newPaths?.length} paths");
     updateLayer(layerGUID, (layer) {
       final newKeyFrames = {...layer.frameData.keyFrames};
       newKeyFrames[frame] = Data(
-        drawPaths: newPaths,
-        activePath: (newPaths?.length ?? 0) - 1,
+        drawPaths: newPaths?.map((path) => path.copy()).toList() ?? [],
       );
-
-      return layer.copyWith(
-        frameData: layer.frameData.copyWith(keyFrames: newKeyFrames),
-      );
+      return layer.deepCopy();
     });
   }
 

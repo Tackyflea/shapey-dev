@@ -8,12 +8,13 @@ import 'package:vector_math/vector_math.dart';
 
 //https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
 // Execute and undo pen draw
+
 class DrawyPenCommand implements AppCommand {
   final ShapeCanvasState _shapeCanvas;
   final FileNotifier fileNotifier;
   final Vector2 newPosition;
-  final int? currentFrame; // todo, link
-  final String? layerGUID; // todo, link
+  final int currentFrame;
+  final String layerGUID;
 
   late final List<FileLayer> _beforeLayers;
 
@@ -27,23 +28,35 @@ class DrawyPenCommand implements AppCommand {
 
   @override
   void execute() {
-    // Snapshot file state before changes
-    _beforeLayers = [...fileNotifier.layers];
+    _beforeLayers = fileNotifier.layers
+        .map((layer) => layer.deepCopy())
+        .toList();
 
-    // Drawy does its internal thing (keeps its own state for now)
+    print(
+      "EXECUTE: Before penMode, drawy has ${_shapeCanvas.drawy.drawPaths.length} paths",
+    );
     final drawPaths = _shapeCanvas.penMode(newPosition);
+    print(
+      "EXECUTE: After penMode, got ${drawPaths.length} paths with ${drawPaths.firstOrNull?.pathPoints.length ?? 0} points",
+    );
 
-    // Also update the file in parallel , TODO HOOKUP
-    // fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
+    fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
+    print("EXECUTE: Saved to file");
   }
 
   @override
   void undo() {
-    // Undo Drawy's internal state
-    _shapeCanvas.undoPen();
+    print(
+      "UNDO: Before restore - drawPaths count: ${_shapeCanvas.drawy.drawPaths.length}",
+    );
 
     // Undo file state
     fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
+
+    print(
+      "UNDO: After restore - drawPaths count: ${_shapeCanvas.drawy.drawPaths.length}",
+    );
+    print("UNDO: Does this trigger a reload?");
   }
 
   @override
@@ -63,7 +76,7 @@ class DrawySelectCommand implements AppCommand {
 
   @override
   void undo() {
-    _shapeCanvas.undoSelect();
+    // TODO: IMPLEMENT
   }
 
   @override

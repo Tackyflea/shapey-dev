@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shapey/app_state/app_commands.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
+import 'package:shapey/shape_canvas.dart';
+import 'package:vector_math/vector_math.dart';
 
 // (History-able) Highight the current layer IF not already
 void action_highlightLayer(WidgetRef ref, FileLayer layer) {
@@ -34,6 +36,26 @@ void action_add_keyframes(WidgetRef ref, FileLayer layer, Set<int> Keys) {
       .read(appNotifier.select((s) => s.appCommandHistory))
       .executeCommand(
         AddKeyFramesCommand(ref.read(fileNotifier.notifier), layer, Keys),
+      );
+}
+
+void action_drawy_pen(
+  ShapeCanvasState shapeCanvasState,
+  WidgetRef ref,
+  Vector2 MousePosition,
+  String layeGuid,
+  int currentFrame,
+) {
+  ref
+      .read(appNotifier.select((s) => s.appCommandHistory))
+      .executeCommand(
+        DrawyPenCommand(
+          shapeCanvasState,
+          ref.read(fileNotifier.notifier),
+          MousePosition,
+          currentFrame,
+          layeGuid,
+        ),
       );
 }
 
