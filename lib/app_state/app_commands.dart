@@ -28,31 +28,16 @@ class DrawyPenCommand implements AppCommand {
 
   @override
   void execute() {
-    print(
-      "EXECUTE: Before penMode, drawy has ${_shapeCanvas.drawy.drawPaths.length} paths",
-    );
+    _beforeLayers = [...fileNotifier.layers];
+
     final drawPaths = _shapeCanvas.penMode(newPosition);
-    print(
-      "EXECUTE: After penMode, got ${drawPaths.length} paths with ${drawPaths.firstOrNull?.pathPoints.length ?? 0} points",
-    );
 
     fileNotifier.setLayerPaths(layerGUID, currentFrame, drawPaths);
-    print("EXECUTE: Saved to file");
   }
 
   @override
   void undo() {
-    print(
-      "UNDO: Before restore - drawPaths count: ${_shapeCanvas.drawy.drawPaths.length}",
-    );
-
-    // Undo file state
     fileNotifier.restoreLayersWithoutHistory(_beforeLayers);
-
-    print(
-      "UNDO: After restore - drawPaths count: ${_shapeCanvas.drawy.drawPaths.length}",
-    );
-    print("UNDO: Does this trigger a reload?");
   }
 
   @override

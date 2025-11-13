@@ -324,15 +324,13 @@ class FileNotifier extends Notifier<FileModel> {
     );
   }
 
-  void setLayerPaths(String layerGUID, int frame, List<DrawyPath>? newPaths) {
-    print("setLayerPaths: Saving ${newPaths?.length} paths");
+  void setLayerPaths(String layerGUID, int frame, List<DrawyPath> newPaths) {
     updateLayer(layerGUID, (layer) {
       final newKeyFrames = {...layer.frameData.keyFrames};
-      newKeyFrames[frame] = Data(
-        drawPaths: newPaths?.map((path) => path.copy()).toList() ?? [],
-      );
+      newKeyFrames[frame] = Data(drawPaths: newPaths);
+
       return layer.copyWith(
-        paths: layer.layerData.copyWith(multiSelectActive: onOff),
+        frameData: layer.frameData.copyWith(keyFrames: newKeyFrames),
       );
     });
   }
