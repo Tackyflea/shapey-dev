@@ -22,7 +22,7 @@ class DrawyPath {
   // indicates mouse active
   bool isActive = false;
 
-  DrawyPath({required this.pathPoints});
+  DrawyPath({required this.pathPoints, this.isActive = false});
 
   void draw(Canvas canvasToDrawOn, Paint paintToDrawWith) {
     canvasToDrawOn.drawPath(path, paintToDrawWith);
