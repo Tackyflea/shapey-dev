@@ -68,7 +68,11 @@ class DrawyPath {
     convertPointsToPath();
   }
 
-  void setActivePoint(DrawyPoint? newPoint, bool isActive) {
+  void setActivePoint(
+    DrawyPoint? newPoint,
+    bool isActive, {
+    bool hideOthers = false,
+  }) {
     if (newPoint == null) {
       return;
     }
@@ -77,7 +81,14 @@ class DrawyPath {
       // point isn't in the list
       return;
     }
-    pathPoints[pointIndex].setActive(isActive);
+    if (hideOthers == true) {
+      for (var i = 0; i < _pathPointsIndexMap.length; i++) {
+        // update the index map every time
+        pathPoints[i].setActive(pointIndex == i);
+      }
+    } else {
+      pathPoints[pointIndex].setActive(isActive);
+    }
   }
 
   // set a group of points on or off, disaling the rest

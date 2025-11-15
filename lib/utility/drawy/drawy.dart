@@ -8,7 +8,7 @@ import 'drawy_path.dart';
 
 // DRAWY START
 // max distance to check for from center, when trying to click on a point
-double MAX_DISTANCE_TO_POINT = 450;
+double MAX_DISTANCE_TO_POINT = 9999;
 // distance to check for to a near path
 double MAX_DISTANCE_TO_PATH = 30;
 // min distance in pen mode, after which we declare that we're in drag mode
@@ -16,7 +16,7 @@ double PEN_MINIMUM_DRAG_DISTANCE = 10;
 // Min distance at which we mark the path as a closed path
 double MIN_DISTANCE_TO_CLOSE = 20;
 // the min distance after which we can recognise the point has curves
-double MIN_DISTANCE_TO_START_CURVE = 10;
+double MIN_DISTANCE_TO_START_CURVE = 50;
 
 // To indicate what side of the bezier is currently selected
 enum DrawyBezierSelected { none, A, B }
@@ -27,29 +27,19 @@ enum DrawyGuideType { fullSquare, square, circle, testType }
 class Drawy {
   void load(Data? frameData) {
     if (frameData == null) {
-      // print("Drawy: No Frame data");
       drawPaths = [];
       return;
     }
-    // print("Drawy: key frame (possibly empty)");
-    // print("Drawy: Path Length${frameData.drawPaths.length}");
-    // drawPaths = frameData.drawPaths; // ← Back to reference (it's ok now!)
     drawPaths = frameData.drawPaths.map((p) => p.copy()).toList();
   }
 
-  // Generic list of paths to draw for testing
-  // TODO: Unify them with any other types of paths into a list of drawyObjects
+  // local REFERENCE of the active layer draw paths. Gets auto updated on refresh / draw/ update
   List<DrawyPath> drawPaths = [];
 
   // PEN SETTINGS
-  // Pen is a custom live path, that we can swap the definition of
-  // depending on what you want to add points to
-
-  // Temporary manipulation on selection only
-  DrawyPath? selectPathToManipulate;
-  DrawyPoint? selectPointToManipulate;
-  bool selectDragOn = false;
-
+  // Pen is a custom live path
+  // for temporary use while selecting
+  List<DrawyPath> selectPathsToManipulate = [];
   DrawyBezierSelected activeBezier =
       DrawyBezierSelected.none; // for tweaking paths
 
@@ -59,18 +49,6 @@ class Drawy {
     ..style = PaintingStyle.stroke;
   void line(Canvas canvasToDrawOn, Offset p1, Offset p2) =>
       canvasToDrawOn.drawLine(p1, p2, PEN_DEFAULT_STROKE);
-  void addLine(List<Vector2> positions) {
-    // so we can keep drawypoints as an internal class
-    // we convert it inside
-
-    List<DrawyPoint> drawyPointList = [];
-    for (var pos in positions) {
-      drawyPointList.add(DrawyPoint.withDefaults(position: pos));
-    }
-    var newPath = DrawyPath(pathPoints: drawyPointList);
-    newPath.convertPointsToPath();
-    drawPaths.add(newPath);
-  }
 
   bool goingInReverse = false;
   // Draws a pan path along mouse position points
@@ -175,121 +153,90 @@ class Drawy {
   }
 
   List<DrawyPath> selectMode(DrawyInteract interact, Vector2 mousePosition) {
-    // first check if theres a point selected and youre far from it
-    if (selectPointToManipulate != null && selectDragOn == false) {
-      // check both the point and its potential beziers
-      var p = selectPointToManipulate!;
-      var positions = [
-        p.getPosition(),
-        if (p.nextPointCubicPointStart != null) p.nextPointCubicPointStart!,
-        if (p.thisPointCubicPointEnd != null) p.thisPointCubicPointEnd!,
-      ];
-      print('already have a path');
-      print(positions);
-      // if any of them are near the mouse you're good
-      var nearMouse = positions.any(
-        (pos) => pos.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT,
-      );
-      print(nearMouse);
-      // otherwise reset point data
-      if (nearMouse == false) {
-        selectPathToManipulate = null;
-        selectPointToManipulate = null;
+    // START
+    // Try to fetch the nearest point
+    if (interact == DrawyInteract.start) {
+      DrawyPath? startPath;
+      DrawyPoint? nearPointWithCurves;
+      for (var drawyPath in drawPaths) {
+        // first check if near an active path
+        bool isNearPoint = _pointNearPath(
+          drawyPath.path,
+          mousePosition,
+          PEN_MINIMUM_DRAG_DISTANCE,
+        );
+        // then if we're near active curves
+        nearPointWithCurves = _curvedPointNearPath(
+          drawyPath,
+          mousePosition,
+          MIN_DISTANCE_TO_START_CURVE,
+        );
+        if (isNearPoint || nearPointWithCurves != null) {
+          startPath = drawyPath;
+          startPath.isActive = true;
+        }
       }
-    }
+      if (startPath == null) {
+        print("No start path made");
+        for (var element in drawPaths) {
+          element.isActive = false;
+        }
+        selectPathsToManipulate.clear();
+        return drawPaths;
+      } else {
+        print("start path found");
 
-    // if the points havent been assigned, IE on Start
-    if (selectPathToManipulate == null || selectPointToManipulate == null) {
-      // check for a nearby point first
-      print('attempting to find a path');
-      var nearestDistance = double.infinity;
-      DrawyPath? nearestPath;
-      DrawyPoint? nearestPoint;
-
-      for (var path in drawPaths) {
+        // TODO: In future when we want mutlti part selection , clear this for loop
+        for (var drawyPath in drawPaths) {
+          if (drawyPath != startPath) {
+            drawyPath.isActive = false;
+          }
+        }
+      }
+      // regular mode get nearest point
+      if (activeBezier == DrawyBezierSelected.none) {
         var (nearIndex, distanceReturned) = _getClosestVectorIndexToVector(
           mousePosition,
-          path.pathPoints,
+          startPath.pathPoints,
         );
-        if (nearIndex != -1 && distanceReturned < nearestDistance) {
-          nearestDistance = distanceReturned;
-          nearestPath = path;
-          nearestPoint = path.pathPoints[nearIndex];
+        if (nearIndex != -1) {
+          startPath.setActivePoint(
+            startPath.pathPoints[nearIndex],
+            true,
+            hideOthers: true,
+          );
         }
+      } else {
+        //curve point we already know the point
+        startPath.setActivePoint(nearPointWithCurves, true, hideOthers: true);
       }
 
-      selectPathToManipulate = nearestPath;
-      selectPointToManipulate = nearestPoint;
-
-      if (selectPathToManipulate != null) {
-        print('found a path');
-      }
-
-      // if nothing is found near by , cancel any path selection
-      if (selectPathToManipulate == null || selectPointToManipulate == null) {
-        print('no path to manipulate');
-        // also mark all paths deselected
-        for (var path in drawPaths) {
-          path.isActive = false;
-        }
-        return drawPaths;
-      }
-
-      // at this point we HAVE a path to manipulate, so we set it to active
-      for (var path in drawPaths) {
-        path.isActive = path == selectPathToManipulate;
-      }
-
-      // we ONLY set 1 point active at a time(for now)
-      for (var point in selectPathToManipulate!.pathPoints) {
-        selectPathToManipulate!.setActivePoint(
-          point,
-          point == selectPointToManipulate,
-        );
-      }
+      selectPathsToManipulate.add(startPath);
     }
-
-    // Start Move End Logic
-    if (interact == DrawyInteract.start) {
-      selectDragOn = true;
-      // BEZIER ACTIVE CHECK
-      // check if youre trying to edit hte beziers, if they exist
-      final pt = selectPointToManipulate!;
-      final a = pt.thisPointCubicPointEnd;
-      final b = pt.nextPointCubicPointStart;
-
-      bool isNearMouse(Vector2 p) =>
-          p.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT;
-      bool isFarFromPoint(Vector2 p) =>
-          pt.getPosition().distanceToSquared(p) > MIN_DISTANCE_TO_START_CURVE;
-
-      if (a != null && isNearMouse(a) && isFarFromPoint(a)) {
-        activeBezier = DrawyBezierSelected.A;
-        return drawPaths;
-      }
-
-      if (b != null && isNearMouse(b) && isFarFromPoint(b)) {
-        activeBezier = DrawyBezierSelected.B;
-        return drawPaths;
-      }
-    }
-
     if (interact == DrawyInteract.move) {
-      // Drag point
-      dragPoint(
-        selectPathToManipulate!,
-        selectPointToManipulate,
-        mousePosition,
-      );
+      if (selectPathsToManipulate.isNotEmpty &&
+          selectPathsToManipulate.length == 1) {
+        DrawyPath movePath = selectPathsToManipulate[0];
+        var activePoints = movePath.getActivePoints();
+        DrawyPoint movePoint = activePoints[0];
+        var position = movePoint.getPosition();
+        var offsetPosition = (mousePosition - position);
+        // going backwards, flip curves
+        if (goingInReverse) {
+          offsetPosition = -offsetPosition;
+        }
+
+        dragPoint(movePath, movePoint, mousePosition);
+      }
     }
 
-    // End Drag
-    if (interact == DrawyInteract.end) {
-      checkAndClosePath(selectPathToManipulate!, goingInReverse);
-
+    // clone history at end of interation
+    if (interact == DrawyInteract.end && selectPathsToManipulate.isNotEmpty) {
+      goingInReverse = false;
+      selectPathsToManipulate.clear();
       activeBezier = DrawyBezierSelected.none;
-      selectDragOn = false;
     }
+
     return drawPaths;
   }
 
@@ -305,11 +252,35 @@ class Drawy {
     return false;
   }
 
+  DrawyPoint? _curvedPointNearPath(
+    DrawyPath path,
+    Vector2 point,
+    double tolerance,
+  ) {
+    var activePoints = path.getActivePoints();
+    for (DrawyPoint pt in activePoints) {
+      var startCurve = pt.thisPointCubicPointEnd;
+      var endCurve = pt.nextPointCubicPointStart;
+      if (startCurve != null) {
+        if (startCurve.distanceToSquared(point) <= tolerance) {
+          activeBezier = DrawyBezierSelected.A;
+          return pt;
+        }
+      }
+      if (endCurve != null) {
+        if (endCurve.distanceToSquared(point) <= tolerance) {
+          activeBezier = DrawyBezierSelected.B;
+          return pt;
+        }
+      }
+    }
+    activeBezier = DrawyBezierSelected.none;
+    return null;
+  }
+
   void update(Canvas ctx) {
     // DRAW
-    // print("RENDERING: ${drawPaths.length} paths");
     // draw all paths
-    // Todo , swap this with a static list
     var pathCount = drawPaths.length;
     for (int i = 0; i < pathCount; i++) {
       // print("  Path $i has ${drawPaths[i].pathPoints.length} points");
@@ -381,7 +352,6 @@ class Drawy {
     final delta = point.getPosition() - mousePosition;
     // BEZIER move mode
     if (activeBezier != DrawyBezierSelected.none) {
-      print('dragging beziers');
       // These are currently mirrors of themselves
       // TODO: Figure out how to split beziers properly so you can individually control them
       Vector2? ctrlA = point.thisPointCubicPointEnd;
