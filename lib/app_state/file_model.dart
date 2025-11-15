@@ -1,7 +1,6 @@
 // contrils the specific file's model
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shapey/app_state/app_model.dart';
 import 'package:uuid/uuid.dart';
 
 import '../utility/drawy/drawy_path.dart';
@@ -233,7 +232,7 @@ class FileNotifier extends Notifier<FileModel> {
 
     final updatedLayers = current.layers.map((l) {
       if (l == layer) {
-        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames ?? {});
+        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames);
         for (final index in frameIndices) {
           newKeyFrames[index] = Data(drawPaths: []);
         }
@@ -257,7 +256,7 @@ class FileNotifier extends Notifier<FileModel> {
 
     final updatedLayers = current.layers.map((l) {
       if (l == layer) {
-        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames ?? {});
+        final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames);
         for (final index in frameIndices) {
           newKeyFrames.remove(index);
         }
@@ -278,7 +277,6 @@ class FileNotifier extends Notifier<FileModel> {
 
   // add a new blank layer
   FileLayer addLayer() {
-    print("add layer");
     final current = state;
     final newLayer = FileLayer();
     newLayer.setName("Layer ${current.layers.length}");

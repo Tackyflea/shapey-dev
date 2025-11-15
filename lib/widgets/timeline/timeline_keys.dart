@@ -149,7 +149,7 @@ class _TimelineLayerKeysState extends ConsumerState<TimelineLayerKeys> {
     bool allFramesHaveKeyFrames = true;
     bool anyOfTheFramesHaveKeyframe = false;
     for (int index in HighlightedKeys) {
-      var notKeyframed = widget.layer.frameData.keyFrames?[index] == null;
+      var notKeyframed = widget.layer.frameData.keyFrames[index] == null;
       if (notKeyframed) {
         allFramesHaveKeyFrames = false;
       } else {
@@ -286,7 +286,7 @@ class TLLayerPainter extends CustomPainter {
     // Draw Keys
     for (int i = 0; i < keyCount; i++) {
       final bool isWholeSecond = i % fps == 0;
-      final bool hasKeyframe = layer.frameData.keyFrames?[i] != null;
+      final bool hasKeyframe = layer.frameData.keyFrames[i] != null;
       // final bool isHighlighted = highlightedKey == i;
       final bool isHighlighted = secondaryHighlightedKeys.contains(i);
 

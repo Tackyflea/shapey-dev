@@ -1,7 +1,6 @@
 import 'dart:ui';
+import 'package:shapey/utility/drawy/components/drawy_point.dart';
 import 'package:vector_math/vector_math.dart';
-
-import 'drawy_point.dart';
 
 // Generic Path wrapper, allows keeping info in a clean point list instead of relying on
 // built in path data

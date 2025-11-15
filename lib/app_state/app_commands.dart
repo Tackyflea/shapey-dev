@@ -2,8 +2,6 @@ import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/shape_canvas.dart';
-import 'package:shapey/utility/drawy/drawy.dart';
-import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart';
 
 //https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
@@ -72,8 +70,7 @@ class DrawySelectCommand implements AppCommand {
 
   @override
   void execute() {
-    _shapeCanvas.selectMode(newPosition);
-    final drawPaths = _shapeCanvas.drawy.drawPaths;
+    final drawPaths = _shapeCanvas.selectMode(newPosition);
     fileNotifier.updateLayerPathsWithClone(
       layer.guid(),
       currentFrame,

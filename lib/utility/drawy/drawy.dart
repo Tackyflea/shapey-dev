@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shapey/app_state/file_model.dart';
+import 'package:shapey/utility/drawy/components/drawy_point.dart';
 import 'package:shapey/utility/drawy/e_interact_type.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
 import 'drawy_path.dart';
-import 'drawy_point.dart';
 
 // DRAWY START
 // max distance to check for from center, when trying to click on a point
@@ -65,7 +65,7 @@ class Drawy {
 
     List<DrawyPoint> drawyPointList = [];
     for (var pos in positions) {
-      drawyPointList.add(DrawyPoint(position: pos));
+      drawyPointList.add(DrawyPoint.withDefaults(position: pos));
     }
     var newPath = DrawyPath(pathPoints: drawyPointList);
     newPath.convertPointsToPath();
@@ -88,7 +88,7 @@ class Drawy {
     List<DrawyPoint>? activePoints = startPath?.getActivePoints();
     // START
     if (interact == DrawyInteract.start) {
-      startPoint = DrawyPoint(position: mousePosition);
+      startPoint = DrawyPoint.withDefaults(position: mousePosition);
       // If path doesnt exist or the point's invalid OR you're inside of a path trying to add a point
       // : Make a new path
       if (startPath == null) {
@@ -174,7 +174,7 @@ class Drawy {
     }
   }
 
-  void selectMode(DrawyInteract interact, Vector2 mousePosition) {
+  List<DrawyPath> selectMode(DrawyInteract interact, Vector2 mousePosition) {
     // first check if theres a point selected and youre far from it
     if (selectPointToManipulate != null && selectDragOn == false) {
       // check both the point and its potential beziers
@@ -184,14 +184,15 @@ class Drawy {
         if (p.nextPointCubicPointStart != null) p.nextPointCubicPointStart!,
         if (p.thisPointCubicPointEnd != null) p.thisPointCubicPointEnd!,
       ];
-
+      print('already have a path');
+      print(positions);
       // if any of them are near the mouse you're good
       var nearMouse = positions.any(
         (pos) => pos.distanceToSquared(mousePosition) < MAX_DISTANCE_TO_POINT,
       );
-
+      print(nearMouse);
       // otherwise reset point data
-      if (!nearMouse) {
+      if (nearMouse == false) {
         selectPathToManipulate = null;
         selectPointToManipulate = null;
       }
@@ -200,7 +201,7 @@ class Drawy {
     // if the points havent been assigned, IE on Start
     if (selectPathToManipulate == null || selectPointToManipulate == null) {
       // check for a nearby point first
-      // print('attempting to find a path');
+      print('attempting to find a path');
       var nearestDistance = double.infinity;
       DrawyPath? nearestPath;
       DrawyPoint? nearestPoint;
@@ -231,7 +232,7 @@ class Drawy {
         for (var path in drawPaths) {
           path.isActive = false;
         }
-        return;
+        return drawPaths;
       }
 
       // at this point we HAVE a path to manipulate, so we set it to active
@@ -264,12 +265,12 @@ class Drawy {
 
       if (a != null && isNearMouse(a) && isFarFromPoint(a)) {
         activeBezier = DrawyBezierSelected.A;
-        return;
+        return drawPaths;
       }
 
       if (b != null && isNearMouse(b) && isFarFromPoint(b)) {
         activeBezier = DrawyBezierSelected.B;
-        return;
+        return drawPaths;
       }
     }
 
@@ -289,6 +290,7 @@ class Drawy {
       activeBezier = DrawyBezierSelected.none;
       selectDragOn = false;
     }
+    return drawPaths;
   }
 
   // TODO, Use compute metrics in select mode somehow so we can better select path
@@ -379,6 +381,7 @@ class Drawy {
     final delta = point.getPosition() - mousePosition;
     // BEZIER move mode
     if (activeBezier != DrawyBezierSelected.none) {
+      print('dragging beziers');
       // These are currently mirrors of themselves
       // TODO: Figure out how to split beziers properly so you can individually control them
       Vector2? ctrlA = point.thisPointCubicPointEnd;

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 abstract interface class AppCommand {
   void execute();
   void undo();
