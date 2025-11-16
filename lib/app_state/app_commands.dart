@@ -2,6 +2,9 @@ import 'package:shapey/app_state/app_history.dart';
 import 'package:shapey/app_state/app_model.dart';
 import 'package:shapey/app_state/file_model.dart';
 import 'package:shapey/shape_canvas.dart';
+import 'package:shapey/utility/drawy/components/drawy_point.dart';
+import 'package:shapey/utility/drawy/drawy_path.dart';
+import 'package:shapey/utility/test_data.dart';
 import 'package:vector_math/vector_math.dart';
 
 //https://medium.com/@aprayush20/understanding-design-patterns-with-dart-01-chain-of-responsibility-command-pattern-b93da4ea9231
@@ -248,7 +251,7 @@ class AddKeyFramesCommand implements AppCommand {
   @override
   void execute() {
     _beforeLayers = [...fileNotifier.layers];
-    fileNotifier.addKeyFrames(layer, keyFrames);
+    fileNotifier.addKeyFrames(layer.guid(), keyFrames);
   }
 
   @override
@@ -300,6 +303,10 @@ class AddInitialLayerCommand implements AppCommand {
     fileNotifier.insertLayer(0, _layer); // history recorded
     appNotifier.updateActiveLayer(_layer.guid()); // history recorded
     appNotifier.updateActiveFrame(0);
+
+    // FOR DEBUGGING
+    fileNotifier.addKeyFrame(_layer.guid(), 0, data: TEST_DATA_RECTANGLE());
+    fileNotifier.addKeyFrame(_layer.guid(), 20, data: TEST_DATA_CIRCLE());
   }
 
   @override

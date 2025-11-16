@@ -85,7 +85,9 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
       // print("fetching data");
       // print(activeFrameData);
       // if no keyframe exists when drawing, add one
-      if (activeFrameData == null) {
+      var isNotAKeyframe =
+          widget.layerData.frameData.keyFrames[widget.currentFrame] == null;
+      if (isNotAKeyframe) {
         action_add_keyframes(ref, widget.layerData, {widget.currentFrame});
       }
       action_drawy_pen(
@@ -106,9 +108,52 @@ class ShapeCanvasState extends ConsumerState<ShapeCanvas> {
     return drawy.selectMode(DrawyInteract.end, mousePosition);
   }
 
+  DrawyLerpedData? lookForLerp() {
+    final keyFrames = widget.layerData.frameData.keyFrames;
+    if (keyFrames.isEmpty) return null;
+
+    // Get sorted keys for reliable ordering
+    final sortedKeys = keyFrames.keys.toList()..sort();
+
+    int? lastKey;
+    int? nextKey;
+
+    for (final key in sortedKeys) {
+      if (key < widget.currentFrame) {
+        lastKey = key;
+      } else if (key > widget.currentFrame && nextKey == null) {
+        nextKey = key;
+        break;
+      }
+    }
+
+    if (lastKey != null && nextKey != null) {
+      final progress = (widget.currentFrame - lastKey) / (nextKey - lastKey);
+      return DrawyLerpedData(
+        LastKeyData: keyFrames[lastKey]!,
+        NextKeyData: keyFrames[nextKey]!,
+        progress: progress,
+      );
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     activeFrameData = widget.layerData.frameData.keyFrames[widget.currentFrame];
+    // if current frame has nothing, try to use the last available key's data
+    var LerpMode = null;
+    if (activeFrameData == null) {
+      LerpMode = lookForLerp();
+      if (LerpMode != null) {
+        // THIS WILL BREAK LOGIC
+        // This will cause atm on adding keyframes both previous and more data added
+        // Enable when you wanna start experimetning with shape morph
+        // activeFrameData = lastKeyData;
+      }
+    }
+    drawy.lerpKeys(LerpMode);
     drawy.load(activeFrameData);
     final ActiveTool activeTool = ref.watch(
       appNotifier.select((s) => s.activeTool),

@@ -104,12 +104,6 @@ class FileLayer {
     frameData = frameData.copyWith(frameCount: newCount);
   }
 
-  void addKeyFrame(int frameIndex) {
-    final newKeyFrames = Map<int, Data>.from(frameData.keyFrames);
-    newKeyFrames[frameIndex] = Data(drawPaths: []);
-    frameData = frameData.copyWith(keyFrames: newKeyFrames);
-  }
-
   void removeKeyFrame(int frameIndex) {
     final newKeyFrames = Map<int, Data>.from(frameData.keyFrames);
     newKeyFrames.remove(frameIndex);
@@ -227,14 +221,19 @@ class FileNotifier extends Notifier<FileModel> {
     );
   }
 
-  void addKeyFrames(FileLayer layer, Set<int> frameIndices) {
+  void addKeyFrame(String layerGuid, int frameIndex, {Data? data}) {
+    addKeyFrames(layerGuid, {frameIndex}, data: data);
+  }
+
+  void addKeyFrames(String layerGuid, Set<int> frameIndices, {Data? data}) {
     final current = state;
+    final defaultData = data ?? Data(drawPaths: []);
 
     final updatedLayers = current.layers.map((l) {
-      if (l == layer) {
+      if (l.guid() == layerGuid) {
         final newKeyFrames = Map<int, Data>.from(l.frameData.keyFrames);
         for (final index in frameIndices) {
-          newKeyFrames[index] = Data(drawPaths: []);
+          newKeyFrames[index] = defaultData;
         }
 
         final updatedFrameData = l.frameData.copyWith(keyFrames: newKeyFrames);

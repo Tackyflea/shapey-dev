@@ -6,6 +6,18 @@ import 'package:vector_math/vector_math.dart' hide Colors;
 
 import 'drawy_path.dart';
 
+class DrawyLerpedData {
+  final Data LastKeyData;
+  final Data NextKeyData;
+  double progress;
+
+  DrawyLerpedData({
+    required this.LastKeyData,
+    required this.NextKeyData,
+    required this.progress,
+  });
+}
+
 // DRAWY START
 // max distance to check for from center, when trying to click on a point
 double MAX_DISTANCE_TO_POINT = 9999;
@@ -25,17 +37,10 @@ enum DrawyBezierSelected { none, A, B }
 enum DrawyGuideType { fullSquare, square, circle, testType }
 
 class Drawy {
-  void load(Data? frameData) {
-    if (frameData == null) {
-      drawPaths = [];
-      return;
-    }
-    drawPaths = frameData.drawPaths.map((p) => p.copy()).toList();
-  }
-
   // local REFERENCE of the active layer draw paths. Gets auto updated on refresh / draw/ update
   List<DrawyPath> drawPaths = [];
 
+  DrawyLerpedData? lerpedKeys = null;
   // PEN SETTINGS
   // Pen is a custom live path
   // for temporary use while selecting
@@ -51,6 +56,24 @@ class Drawy {
       canvasToDrawOn.drawLine(p1, p2, PEN_DEFAULT_STROKE);
 
   bool goingInReverse = false;
+
+  void load(Data? frameData) {
+    if (frameData == null) {
+      drawPaths = [];
+      return;
+    }
+    drawPaths = frameData.drawPaths.map((p) => p.copy()).toList();
+  }
+
+  // Setup action for potential lerp
+  // TODO, this should probably only kick in , if data point 1 (first) has shapeTween on
+  void lerpKeys(DrawyLerpedData? newLerpedKeys) {
+    lerpedKeys = newLerpedKeys;
+    if (lerpedKeys != null) {
+      // print("ready to lerp ${newLerpedKeys?.progress}");
+    }
+  }
+
   // Draws a pan path along mouse position points
   List<DrawyPath> penMode(DrawyInteract interact, Vector2 mousePosition) {
     DrawyPath? startPath;
@@ -278,8 +301,18 @@ class Drawy {
     return null;
   }
 
+  void updateShapeTween(Canvas ctx) {
+    print('ready to lerp');
+  }
+
   void update(Canvas ctx) {
     // DRAW
+
+    // Early out for shape lerps
+    // if (lerpedKeys != null) {
+    //   updateShapeTween(ctx);
+    //   return;
+    // }
     // draw all paths
     var pathCount = drawPaths.length;
     for (int i = 0; i < pathCount; i++) {
@@ -294,6 +327,7 @@ class Drawy {
       // GUIDE LAYERS
       // draw guides for all points in ACTIVE path, and a special guide for selected point
       var pointCount = path.pathPoints.length;
+      // print(path.pathPoints.toList());
       for (int y = 0; y < pointCount; y++) {
         DrawyPoint pt = path.pathPoints[y];
         if (pt.isActive()) {
