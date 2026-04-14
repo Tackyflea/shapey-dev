@@ -1,5 +1,7 @@
 # (DEV) *Shapey*
 
+No time to work on it any more, PR-s welcome 🙇
+
 ## To Build:
 ```
 .\build.ps1 -v -version-
